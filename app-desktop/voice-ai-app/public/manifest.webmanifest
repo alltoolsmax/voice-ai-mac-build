@@ -1,0 +1,16 @@
+{
+  "name": "Voice AI - Mr.Huỳnh",
+  "short_name": "Voice AI",
+  "description": "Giọng nói AI tiếng Việt - dùng trên điện thoại, chạy trên máy tính của bạn.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f3f8f8",
+  "theme_color": "#0aa889",
+  "lang": "vi",
+  "icons": [
+    { "src": "/pwa-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/pwa-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}

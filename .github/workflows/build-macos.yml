@@ -1,0 +1,30 @@
+name: Build macOS
+on:
+  workflow_dispatch:
+jobs:
+  dmg:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: macos-15, label: apple-silicon }
+          - { os: macos-15-intel, label: intel }
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: app-desktop/voice-ai-app/package-lock.json
+      - name: Build .dmg
+        run: |
+          chmod +x scripts/build_macos.sh
+          ./scripts/build_macos.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: voice-ai-macos-${{ matrix.label }}
+          path: dist/*.dmg
+          if-no-files-found: error

@@ -1,0 +1,58 @@
+Voice AI MrHuynh cho macOS
+==========================
+
+YÊU CẦU
+    Mac chip Apple (M1, M2, M3...): macOS 14 Sonoma trở lên -> file Voice-AI-MrHuynh-v<phiên bản>-macos-arm64.dmg
+    Mac chip Intel:                 macOS 13 Ventura trở lên -> file Voice-AI-MrHuynh-v<phiên bản>-macos-x86_64.dmg
+    Xem chip: menu Apple -> About This Mac (Giới thiệu về máy Mac này).
+
+CÀI
+    Kéo biểu tượng "Voice AI MrHuynh" thả vào thư mục Applications (ngay bên cạnh).
+
+MỞ
+    Launchpad, hoặc Finder -> Applications -> Voice AI MrHuynh.
+    Lần đầu mở mất thêm vài giây để chuẩn bị mô hình.
+
+LẦN ĐẦU MỞ BỊ CHẶN ("không xác minh được nhà phát triển")
+    App chưa được Apple chứng thực nên macOS chặn lần đầu. Mở khoá một lần:
+      1. Bấm "Done" / "OK" để đóng thông báo.
+      2. Vào System Settings (Cài đặt hệ thống) -> Privacy & Security
+         (Quyền riêng tư & Bảo mật), kéo xuống cuối.
+      3. Bấm "Open Anyway" (Vẫn mở) cạnh dòng Voice AI MrHuynh, nhập mật khẩu máy.
+    Hoặc chạy trong Terminal:
+        xattr -dr com.apple.quarantine "/Applications/Voice AI MrHuynh.app"
+
+TẮT
+    Đóng cửa sổ app, hoặc bấm Cmd+Q.
+
+MICRO
+    Tab Nhân bản giọng dùng micro để thu giọng mẫu; lần đầu macOS hỏi quyền,
+    bấm "Allow" (Cho phép).
+
+DÙNG TRÊN ĐIỆN THOẠI (cùng Wi-Fi)
+    1. Trong app: Cài đặt -> bật "Cho máy khác truy cập API", rồi bật "Dùng trên điện thoại".
+    2. Thoát app (Cmd+Q), mở lại, cho phép kết nối mạng nếu macOS hỏi.
+    3. Điện thoại nối cùng Wi-Fi, mở trình duyệt, vào địa chỉ http://<IP máy Mac>:8001
+       (địa chỉ hiện sẵn trong Cài đặt), nhập mã PIN 6 số.
+    4. Thêm vào màn hình chính: iPhone: Chia sẻ -> Thêm vào MH chính; Android: ⋮ -> Thêm vào màn hình chính.
+    Máy Mac phải đang mở app. Giọng được tạo trên Mac, điện thoại chỉ là màn hình điều khiển.
+
+CẬP NHẬT
+    Khi có bản mới app báo trong cửa sổ; bấm nút để tải file .dmg mới, rồi kéo đè vào
+    Applications (dữ liệu và key bản quyền được giữ nguyên). Bản Mac không tự cài đè như bản Windows.
+
+CHO MÁY KHÁC GỌI API
+    1. Trong app: Cài đặt -> Cho máy khác truy cập API -> bật, chép khoá API.
+    2. Thoát app (Cmd+Q) rồi mở lại. Lần đầu macOS hỏi cho phép kết nối mạng
+       đến: bấm "Allow".
+    Máy khác gọi http://<IP máy Mac>:8001/... kèm header  X-API-Key: <khoá>
+    Tài liệu API: http://<IP máy Mac>:8001/docs
+
+GHI CHÚ
+    Bản macOS chạy bằng CPU (Mac không dùng card NVIDIA).
+    Dữ liệu nằm trong ~/Library/Application Support/Voice AI MrHuynh và
+    ~/VoiceAIMrHuynh. Cập nhật app (kéo bản mới đè lên) không làm mất dữ liệu.
+
+GẶP LỖI
+    Gửi file ~/Library/Application Support/Voice AI MrHuynh/voice-ai-mrhuynh.log
+    cho bộ phận hỗ trợ.

@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Voice AI - Mr.Huỳnh
+Comment=Vietnamese text-to-speech and voice cloning
+Comment[vi]=Chuyển văn bản thành giọng nói tiếng Việt
+Exec=voice-ai-mrhuynh
+Icon=voice-ai-mrhuynh
+Terminal=true
+Categories=AudioVideo;Audio;
+Keywords=TTS;tieng viet;giong noi;voice;

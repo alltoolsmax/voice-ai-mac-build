@@ -1,0 +1,20 @@
+BUILD BẢN MAC (làm trên máy Mac, 1 lần mỗi phiên bản)
+=====================================================
+Không thể build file Mac từ Windows/Linux, nên cần một máy Mac (hoặc GitHub Actions).
+
+CÁCH 1 - có máy Mac:
+  1. Giải nén source (zip) vào một thư mục trên Mac.
+  2. Bấm chuột phải file BUILD-MAC.command -> Open (lần đầu macOS hỏi, chọn Open).
+     Nếu báo không có quyền chạy:  Terminal -> chmod +x BUILD-MAC.command
+  3. Chờ vài phút - file nằm trong dist/Voice-AI-MrHuynh-v<phiên bản>-macos-<chip>.dmg
+     (chip Apple và chip Intel là HAI file khác nhau, build trên đúng loại Mac của người dùng).
+
+CÁCH 2 - không có Mac: dùng GitHub Actions
+  Chép packaging/macos/github-workflow/build-macos.yml vào .github/workflows/ của repo MỚI,
+  đẩy mã lên, vào tab Actions chạy "Build macOS", tải .dmg ở mục Artifacts.
+
+PHÁT HÀNH CHO NGƯỜI DÙNG MAC
+  Upload file .dmg lên hosting, rồi trong version.json thêm dòng (cùng số version với bản Windows):
+      "url_mac": "https://active.mrhuynh.net/downloads/Voice-AI-MrHuynh-v1.5.4-macos-arm64.dmg"
+  Chưa có url_mac thì app Mac không báo bản mới. App Mac không tự cài đè: bấm nút sẽ mở link tải .dmg.
+  Key bản quyền dùng chung với Windows (Mac khác = mã máy khác, kích hoạt riêng như mọi máy).

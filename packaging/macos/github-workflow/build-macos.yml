@@ -1,0 +1,22 @@
+# TUỲ CHỌN: tự build .dmg trên máy Mac của GitHub (khi bạn không có Mac).
+# Dùng: chép file này vào  .github/workflows/  của repo MỚI của bạn, đẩy mã lên,
+# vào tab Actions -> "Build macOS" -> Run workflow -> tải file .dmg ở mục Artifacts.
+name: Build macOS
+on:
+  workflow_dispatch:
+jobs:
+  dmg:
+    strategy:
+      matrix:
+        os: [macos-14, macos-13]   # macos-14 = chip Apple (arm64), macos-13 = chip Intel
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - uses: actions/setup-node@v4
+        with: { node-version: "20" }
+      - run: ./scripts/build_macos.sh --skip-frontend
+      - uses: actions/upload-artifact@v4
+        with:
+          name: voice-ai-macos-${{ matrix.os }}
+          path: dist/*.dmg
