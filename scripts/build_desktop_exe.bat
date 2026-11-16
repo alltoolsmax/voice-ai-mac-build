@@ -40,7 +40,7 @@ cd ..\..
 ::    cai le bang pip nua - truoc day no chi ton tai tren may build, nen ban source
 ::    tai ve khong bao gio mo duoc cua so rieng.
 ::    pyinstaller la cong cu BUILD, khong phai phu thuoc runtime -> van cai rieng.
-::    pillow: chi make_splash.py can (ve man hinh khoi dong); truoc day co san nho
+::    pillow: man hinh khoi dong (apps\splash_render.py) can; truoc day co san nho
 ::    gradio keo theo, bo gradio thi phai cai tuong minh.
 echo.
 echo [+] Buoc 2/3: Kiem tra cac cong cu dong goi (PyInstaller, PyWebView)...
@@ -65,12 +65,7 @@ if not defined VOICEAI_UV_EXE (
 )
 
 :: 3. Dong goi thanh file chay Desktop .exe
-:: Ve splash theo phien ban ung dung hien tai.
-".venv\Scripts\python.exe" assets\brand\make_splash.py
-if %errorlevel% neq 0 (
-    echo [ERROR] Khong tao duoc man hinh khoi dong.
-    exit /b 1
-)
+:: (Man hinh khoi dong nay do apps\splash_native.py ve luc chay, nen khong con buoc tao splash.png.)
 echo.
 echo [+] Buoc 3/3: Dang tien hanh dong goi thanh thu muc dist/Voice-AI-MrHuynh...
 
@@ -102,6 +97,9 @@ if not exist "build\Voice-AI-MrHuynh" mkdir "build\Voice-AI-MrHuynh"
     --exclude-module "transformers" ^
     --add-data "docs\voice-ai-mrhuynh.md;." ^
     --add-data "DIEU-KHOAN.md;." ^
+    --add-data "assets\brand\logo.png;assets\brand" ^
+    --hidden-import "PIL.ImageFilter" ^
+    --hidden-import "PIL.ImageFont" ^
     --add-data "app-desktop/voice-ai-app/dist;app-desktop/voice-ai-app/dist" ^
     --collect-all "onnxruntime" ^
     --collect-all "sea_g2p" ^
@@ -133,7 +131,6 @@ if not exist "build\Voice-AI-MrHuynh" mkdir "build\Voice-AI-MrHuynh"
     --hidden-import "clr" ^
     --hidden-import "pythonnet" ^
     --icon "assets\icons\icon.ico" ^
-    --splash "assets\splash.png" ^
     --manifest "assets\app.manifest" ^
     apps/desktop_app.py
 

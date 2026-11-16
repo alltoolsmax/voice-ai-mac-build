@@ -19,6 +19,7 @@ import {
 import type React from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import env from "@/config/env";
+import { splashUpdate } from "@/lib/splash";
 import {
   type AppUpdateInfo,
   checkAppUpdate,
@@ -159,6 +160,9 @@ export const TtsStudio: React.FC = () => {
     useState<ConnectionStatus>("connecting");
   const [engineName, setEngineName] = useState<string>("VieNeu-TTS v3 Turbo");
   const [isInitialLoading, setIsInitialLoading] = useState<boolean>(true);
+  // Bản Windows: màn hình khởi động trong suốt (Python vẽ) lo phần "đang tải"; khi nó đang chạy
+  // thì không vẽ LoadingScreen của web nữa (cửa sổ chính còn ẩn).
+  const [nativeSplash, setNativeSplash] = useState<boolean>(false);
   const [loadingMessage, setLoadingMessage] = useState<string>(
     "Đang khởi động backend và nạp model..."
   );
@@ -166,6 +170,25 @@ export const TtsStudio: React.FC = () => {
     "starting" | "downloading" | "ready" | "failed"
   >("starting");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  useEffect(() => {
+    const send = () => {
+      const status = isInitialLoading ? loadingState : "ready";
+      const progress =
+        status === "ready" ? 1 : status === "downloading" ? 0.62 : 0.34;
+      splashUpdate(loadingMessage, status, progress).then(setNativeSplash);
+    };
+    send();
+    if (!isInitialLoading) {
+      return;
+    }
+    // Nhịp tim: màn hình khởi động tự tắt nếu giao diện im lặng quá lâu (tránh kẹt).
+    const id = setInterval(send, 4000);
+    window.addEventListener("pywebviewready", send);
+    return () => {
+      clearInterval(id);
+      window.removeEventListener("pywebviewready", send);
+    };
+  }, [isInitialLoading, loadingMessage, loadingState]);
   // Phien ban + ban moi: hoi mot lan khi server san sang (server tu gioi han 1 lan/ngay).
   const [appUpdate, setAppUpdate] = useState<AppUpdateInfo | null>(null);
   const [updateDismissed, setUpdateDismissed] = useState(false);
@@ -1318,15 +1341,17 @@ export const TtsStudio: React.FC = () => {
         />
 
         {/* Màn hình chờ khi khởi động */}
-        {isInitialLoading && !isSettingsOpen && (
-          <LoadingScreen
-            isDark={isDark}
-            message={loadingMessage}
-            onOpenSettings={() => setIsSettingsOpen(true)}
-            onRetry={restartConnection}
-            status={loadingState}
-          />
-        )}
+        {isInitialLoading &&
+          !isSettingsOpen &&
+          !(nativeSplash && loadingState !== "failed") && (
+            <LoadingScreen
+              isDark={isDark}
+              message={loadingMessage}
+              onOpenSettings={() => setIsSettingsOpen(true)}
+              onRetry={restartConnection}
+              status={loadingState}
+            />
+          )}
       </div>
     </ModelCapsProvider>
   );

@@ -15,6 +15,6 @@ CÁCH 2 - không có Mac: dùng GitHub Actions
 
 PHÁT HÀNH CHO NGƯỜI DÙNG MAC
   Upload file .dmg lên hosting, rồi trong version.json thêm dòng (cùng số version với bản Windows):
-      "url_mac": "https://active.mrhuynh.net/downloads/Voice-AI-MrHuynh-v1.5.4-macos-arm64.dmg"
+      "url_mac": "https://active.mrhuynh.net/downloads/Voice-AI-MrHuynh-v1.5.5-macos-arm64.dmg"
   Chưa có url_mac thì app Mac không báo bản mới. App Mac không tự cài đè: bấm nút sẽ mở link tải .dmg.
   Key bản quyền dùng chung với Windows (Mac khác = mã máy khác, kích hoạt riêng như mọi máy).

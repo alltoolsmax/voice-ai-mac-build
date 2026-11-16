@@ -12,6 +12,19 @@ import sys
 import time
 import threading
 from pathlib import Path
+
+# Màn hình khởi động trong suốt (Windows): bật SỚM NHẤT có thể, trước các import nặng bên dưới.
+# Tắt bằng biến môi trường VOICEAI_NO_SPLASH=1. Lỗi gì thì bỏ qua, app vẫn chạy bình thường.
+_NATIVE_SPLASH = None
+if __name__ == "__main__" and sys.platform == "win32" and not os.environ.get("VOICEAI_NO_SPLASH"):
+    try:
+        from apps.splash_native import NativeSplash
+        _NATIVE_SPLASH = NativeSplash()
+        if not _NATIVE_SPLASH.start():
+            _NATIVE_SPLASH = None
+    except Exception:
+        _NATIVE_SPLASH = None
+
 import urllib.request
 import uvicorn
 
@@ -301,6 +314,11 @@ def splash_close() -> None:
     `--splash` nhưng `pyi_splash` vẫn bị gom vào bundle, và import nó ở đó in ra
     traceback `KeyError: '_PYI_SPLASH_IPC'` vào log.
     """
+    if _NATIVE_SPLASH is not None:
+        try:
+            _NATIVE_SPLASH.close()
+        except Exception:
+            pass
     if "_PYI_SPLASH_IPC" not in os.environ:
         return
     try:
@@ -428,6 +446,27 @@ class DesktopApi:
 
     def set_window(self, window):
         self._window = window
+
+    # ---- Màn hình khởi động trong suốt: giao diện web báo tiến độ qua đây ----
+    on_ready = None  # main() gắn: hiện cửa sổ chính + tắt splash
+    last_beat = 0.0
+
+    def splash_update(self, message: str = "", status: str = "starting", progress: float = 0.34) -> bool:
+        """True = màn hình khởi động còn lo phần "đang tải" (giao diện đừng vẽ màn hình tải riêng)."""
+        sp = _NATIVE_SPLASH
+        self.last_beat = time.monotonic()
+        if sp is None or not sp.active:
+            return False
+        if status in ("ready", "failed"):
+            if self.on_ready is not None:
+                self.on_ready()
+            return False
+        try:
+            sp.set_phase(1.0)
+            sp.set_status(str(message)[:90], float(progress))
+        except Exception:
+            pass
+        return True
 
     def quit_app(self) -> None:
         """Nút "Thoát" ở màn hình điều khoản: người dùng không đồng ý thì đóng app."""
@@ -795,8 +834,30 @@ def main():
             if revealed.is_set():
                 return
             revealed.set()
+            window.show()  # hiện cửa sổ chính TRƯỚC, rồi splash mờ dần: không có khoảng trống
             splash_close()
-            window.show()
+
+        desktop_api.on_ready = reveal_window
+
+        def on_loaded():
+            sp = _NATIVE_SPLASH
+            if sp is None or not sp.active:
+                reveal_window()
+                return
+            # Giữ splash trong suốt tới khi giao diện báo xong (hoặc lỗi). Giao diện gửi nhịp tim
+            # mỗi 4 giây; im lặng quá 45 giây (giao diện hỏng/treo) thì hiện cửa sổ để chẩn đoán.
+            sp.set_phase(1.0)
+            desktop_api.last_beat = time.monotonic()
+
+            def watchdog():
+                while not revealed.is_set():
+                    time.sleep(1.0)
+                    if time.monotonic() - desktop_api.last_beat > 45:
+                        log("[Chẩn đoán] Giao diện im lặng quá 45 giây; hiện cửa sổ để chẩn đoán.")
+                        reveal_window()
+                        return
+
+            threading.Thread(target=watchdog, daemon=True).start()
 
         def reveal_fallback():
             # Do not leave a hidden app behind if WebView2 never signals loaded.
@@ -804,7 +865,7 @@ def main():
                 log("[Chẩn đoán] WebView2 không báo đã nạp sau 15 giây; hiện cửa sổ để chẩn đoán.")
                 reveal_window()
 
-        window.events.loaded += reveal_window
+        window.events.loaded += on_loaded
         threading.Thread(target=reveal_fallback, daemon=True).start()
         # VOICEAI_DEBUG=1 bật devtools để xem lỗi JavaScript - cách duy nhất chẩn đoán
         # được tình trạng "cửa sổ mở ra nhưng trắng trơn" trên máy người dùng.

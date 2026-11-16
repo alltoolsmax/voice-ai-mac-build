@@ -27,6 +27,9 @@ if %errorlevel% neq 0 (
     exit /b 1
 )
 
+:: Pillow ve man hinh khoi dong trong suot. Loi o buoc nay khong sao: chi mat hieu ung khoi dong.
+uv pip install pillow >nul 2>&1
+
 :: Desktop launcher tu chon cong trong, khong tat phien dang chay.
 
 echo [+] Dang mo ung dung Desktop Voice AI - Mr.Huynh...

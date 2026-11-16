@@ -1,6 +1,7 @@
 import { FileText } from "lucide-react";
 import type React from "react";
 import { useEffect, useState } from "react";
+import { RevealSplash } from "@/components/RevealSplash";
 import { acceptTerms, fetchTerms, type TermsInfo } from "../api";
 import { TermsMarkdown } from "./TermsMarkdown";
 
@@ -44,6 +45,7 @@ export const TermsGate: React.FC<{ apiUrl: string }> = ({ apiUrl }) => {
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-background/95 p-4">
+      <RevealSplash />
       <div className="flex max-h-[90vh] w-full max-w-2xl flex-col rounded-2xl border border-border bg-card shadow-md">
         <div className="flex items-center gap-2 border-border/60 border-b px-5 py-4">
           <FileText className="h-5 w-5 text-brand-500" />

@@ -18,6 +18,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { RevealSplash } from "@/components/RevealSplash";
 import logo from "../../assets/logo.png";
 import { AnnouncementPopup } from "../tts/components/AnnouncementPopup";
 
@@ -786,6 +787,7 @@ export const LicenseGate: React.FC<{ children: ReactNode }> = ({
         />
         {/* Người hết hạn dùng thử vẫn thấy popup thông báo (khung chính không được dựng nên phải gắn ở đây). */}
         <AnnouncementPopup apiUrl={apiBase()} waiting={false} />
+        <RevealSplash />
       </div>
     );
   }
