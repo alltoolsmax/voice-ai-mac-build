@@ -38,6 +38,21 @@ except Exception as _webview_exc:
     webview = None
     _WEBVIEW_IMPORT_ERROR = _webview_exc
 
+# Nạp pythonnet (`clr`) NGAY BÂY GIỜ, trước khi backend kịp nạp bộ thư viện GPU vào sys.path.
+# `webview.platforms.winforms` chỉ import `clr` lúc mở cửa sổ - tức SAU khi thread backend
+# đã chèn site-packages của venv GPU lên đầu sys.path. Sau khi cài VoxCPM/Kokoro GPU, venv đó
+# có cffi/pycparser/... bản khác, đè lên bản app dùng cho clr_loader nên clr hỏng. pywebview
+# nuốt lỗi gốc rồi thử .NET Core và báo "Failed to create a .NET runtime (coreclr)", làm app
+# rớt sang trình duyệt. Nạp sớm thì clr nằm sẵn trong sys.modules, venv không đè được.
+# Lỗi gốc (nếu có) lưu lại để ghi log; pywebview vẫn tự thử lại như trước.
+_CLR_IMPORT_ERROR = None
+if sys.platform == "win32" and webview is not None:
+    try:
+        import clr  # noqa: F401
+    except Exception:
+        import traceback as _tb
+        _CLR_IMPORT_ERROR = _tb.format_exc()
+
 # Fix Windows / PyInstaller Windowed Unicode Encoding issues
 if sys.platform == "win32":
     if sys.stdout is None:
@@ -786,6 +801,9 @@ def main():
         log(f"[Chẩn đoán] Windows: {platform.platform()}")
         log(f"[Chẩn đoán] WebView2 có: {webview2_available()}")
         log(f"[Chẩn đoán] pywebview: {getattr(webview, '__version__', '?')}")
+        if sys.platform == "win32":
+            log("[Chẩn đoán] pythonnet (.NET Framework): "
+                + ("nạp được" if _CLR_IMPORT_ERROR is None else "LỖI\n" + _CLR_IMPORT_ERROR))
         from webview.platforms import winforms as _wf
         log(f"[Chẩn đoán] Engine thực dùng: {getattr(_wf, 'renderer', '?')}"
             f" | is_chromium={getattr(_wf, 'is_chromium', '?')}")

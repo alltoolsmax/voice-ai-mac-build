@@ -1,9 +1,12 @@
 import { X } from "lucide-react";
 import type React from "react";
-import { useCallback, useEffect, useId, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 
 // Thông báo popup do Mr.Huỳnh soạn trên máy chủ (admin.php), không liên quan tới cập nhật phiên bản.
 // App chỉ hiện khi đúng đối tượng; người dùng đóng xong thì không hiện lại cho tới khi nội dung đổi.
+// Hỏi lại backend mỗi 30 giây (backend lại hỏi máy chủ tối đa mỗi 60 giây) nên Mr.Huỳnh bấm Lưu xong
+// thì khoảng 1 phút sau người đang mở app cũng thấy popup, không cần mở lại app.
+const POLL_MS = 30_000;
 
 interface Announcement {
   badge: string;
@@ -56,6 +59,8 @@ export const AnnouncementPopup: React.FC<{
 }> = ({ apiUrl, waiting }) => {
   const titleId = useId();
   const [item, setItem] = useState<Announcement | null>(null);
+  // Id đã đóng trong lần chạy này: chặn hiện lại trước khi máy ghi nhận xong lệnh đóng.
+  const closedIds = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     if (waiting) {
@@ -63,7 +68,7 @@ export const AnnouncementPopup: React.FC<{
     }
     const controller = new AbortController();
     const base = clean(apiUrl);
-    (async () => {
+    const check = async () => {
       try {
         const [annRes, licRes] = await Promise.all([
           fetch(`${base}/api/app/announcement`, { signal: controller.signal }),
@@ -79,20 +84,41 @@ export const AnnouncementPopup: React.FC<{
         const lic: LicenseState | null = licRes?.ok
           ? await licRes.json()
           : null;
-        if (ann && (ann.title || ann.body) && eligible(lic)) {
-          setItem(ann);
+        if (
+          ann &&
+          (ann.title || ann.body) &&
+          eligible(lic) &&
+          !closedIds.current.has(ann.id)
+        ) {
+          // Nội dung đổi (id mới) thì thay luôn popup đang mở.
+          setItem((prev) => (prev?.id === ann.id ? prev : ann));
+        } else {
+          setItem(null);
         }
       } catch {
         // mất mạng hoặc backend cũ: im lặng
       }
-    })();
-    return () => controller.abort();
+    };
+    check();
+    const timer = window.setInterval(check, POLL_MS);
+    const onVisible = () => {
+      if (document.visibilityState === "visible") {
+        check();
+      }
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      controller.abort();
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
   }, [apiUrl, waiting]);
 
   const close = useCallback(() => {
     const current = item;
     setItem(null);
     if (current) {
+      closedIds.current.add(current.id);
       fetch(`${clean(apiUrl)}/api/app/announcement/dismiss`, {
         body: JSON.stringify({ id: current.id }),
         headers: { "Content-Type": "application/json" },

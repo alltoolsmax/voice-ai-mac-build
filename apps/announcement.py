@@ -1,4 +1,4 @@
-"""Thông báo popup do Mr.Huỳnh soạn trên máy chủ (admin.php). App lấy khoảng 1 lần/giờ.
+"""Thông báo popup do Mr.Huỳnh soạn trên máy chủ (admin.php). App lấy tối đa 1 lần/phút.
 
 Máy chủ trả {"enabled": false} khi tắt hoặc hết hạn. Người dùng đóng thông báo nào thì id đó
 được ghi vào %LOCALAPPDATA%/VoiceAIMrHuynh/announcement.json và không hiện lại cho tới khi id đổi.
@@ -21,7 +21,7 @@ from apps.remote_access import require_this_machine
 from apps.runtime_paths import https_context
 
 ANNOUNCE_URL = os.environ.get("VOICEAI_ANNOUNCE_URL", "https://active.mrhuynh.net/api/app/announcement")
-CHECK_INTERVAL_SECONDS = 3600
+CHECK_INTERVAL_SECONDS = 60
 TIMEOUT_SECONDS = 8
 _lock = threading.Lock()
 router = APIRouter()
@@ -98,6 +98,33 @@ def current(now: float | None = None) -> dict | None:
         if latest["id"] in (state.get("dismissed") or []):
             return None
         return latest
+
+
+VIDEO_URL = os.environ.get("VOICEAI_VIDEO_URL", "https://active.mrhuynh.net/api/app/video")
+VIDEO_CHECK_SECONDS = 300
+_video_cache: dict = {"url": "", "at": 0.0}
+
+
+def video_url(now: float | None = None) -> str:
+    """Link video hướng dẫn do admin đặt (chỉ https); rỗng nếu chưa đặt hoặc mất mạng lần đầu."""
+    now = time.time() if now is None else now
+    with _lock:
+        if now - _video_cache["at"] >= VIDEO_CHECK_SECONDS or _video_cache["at"] > now:
+            try:
+                request = urllib.request.Request(VIDEO_URL, headers={"Accept": "application/json", "User-Agent": "Voice-AI-MrHuynh"})
+                with urllib.request.urlopen(request, timeout=TIMEOUT_SECONDS,
+                                            context=https_context() if VIDEO_URL.startswith("https") else None) as response:
+                    body = json.loads(response.read().decode("utf-8"))
+                url = str(body.get("url") or "") if isinstance(body, dict) else ""
+                _video_cache.update(url=url if url.startswith("https://") else "", at=now)
+            except Exception:
+                _video_cache["at"] = now - VIDEO_CHECK_SECONDS + 30  # lỗi mạng: thử lại sau 30 giây, giữ link cũ
+        return _video_cache["url"]
+
+
+@router.get("/api/app/video")
+def get_video():
+    return {"url": video_url()}
 
 
 class DismissBody(BaseModel):

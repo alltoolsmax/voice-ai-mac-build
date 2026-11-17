@@ -770,6 +770,7 @@ export const TtsStudio: React.FC = () => {
       >
         {/* Thanh đầu trang */}
         <Header
+          apiUrl={settings.apiUrl}
           engineName={engineName}
           isDark={isDark}
           onOpenSettings={() => {
@@ -824,7 +825,6 @@ export const TtsStudio: React.FC = () => {
                       tab: "audiobook",
                       label: "Sách nói",
                       icon: BookOpenText,
-                      badge: "MỚI",
                     },
                     { tab: "batch", label: "Tạo hàng loạt", icon: ListOrdered },
                     { tab: "clone", label: "Nhân bản giọng", icon: Sparkles },
@@ -832,7 +832,6 @@ export const TtsStudio: React.FC = () => {
                       tab: "design",
                       label: "Thiết kế giọng",
                       icon: AudioLines,
-                      badge: "MỚI",
                     },
                   ],
                 },
@@ -859,7 +858,6 @@ export const TtsStudio: React.FC = () => {
                       tab: "models",
                       label: "Mô hình",
                       icon: Cpu,
-                      badge: "MỚI",
                     },
                     { tab: "settings", label: "Cài đặt", icon: Settings },
                     {
@@ -891,14 +889,6 @@ export const TtsStudio: React.FC = () => {
                     >
                       <item.icon aria-hidden="true" size={16} />
                       <span>{item.label}</span>
-                      {"badge" in item && item.badge && (
-                        <span
-                          className="studio-nav-count"
-                          style={{ background: "#f59e0b", color: "#fff" }}
-                        >
-                          {item.badge}
-                        </span>
-                      )}
                       {item.tab === "history" && (
                         <span className="studio-nav-count">
                           {history.length}

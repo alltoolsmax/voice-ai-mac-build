@@ -1,5 +1,6 @@
-import { Moon, RefreshCw, Sun } from "lucide-react";
+import { Moon, PlayCircle, RefreshCw, Sun } from "lucide-react";
 import type React from "react";
+import { useEffect, useState } from "react";
 import logo from "../../../assets/logo.png";
 import type { ConnectionStatus } from "../types";
 
@@ -17,6 +18,7 @@ const CONNECTION_COLORS = {
   error: "bg-rose-500",
 };
 interface HeaderProps {
+  apiUrl: string;
   engineName: string;
   isDark: boolean;
   onOpenSettings: () => void;
@@ -26,7 +28,49 @@ interface HeaderProps {
   status: ConnectionStatus;
 }
 
+const VIDEO_REFRESH_MS = 5 * 60_000;
+
+/** Nút "Xem Video hướng dẫn": link do admin đặt trên máy chủ; chưa đặt thì ẩn. */
+const VideoGuideButton: React.FC<{ apiUrl: string }> = ({ apiUrl }) => {
+  const [url, setUrl] = useState("");
+  useEffect(() => {
+    let alive = true;
+    const load = () => {
+      fetch(`${apiUrl.replace(/\/+$/, "")}/api/app/video`)
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          if (alive && data && typeof data.url === "string") {
+            setUrl(data.url.startsWith("https://") ? data.url : "");
+          }
+        })
+        .catch(() => undefined);
+    };
+    load();
+    const timer = window.setInterval(load, VIDEO_REFRESH_MS);
+    return () => {
+      alive = false;
+      window.clearInterval(timer);
+    };
+  }, [apiUrl]);
+  if (!url) {
+    return null;
+  }
+  return (
+    <a
+      className="studio-video-guide"
+      href={url}
+      rel="noopener noreferrer"
+      target="_blank"
+      title="Mở video hướng dẫn trên YouTube (tab mới)"
+    >
+      <PlayCircle aria-hidden="true" size={16} />
+      <span>Xem Video hướng dẫn</span>
+    </a>
+  );
+};
+
 export const Header: React.FC<HeaderProps> = ({
+  apiUrl,
   engineName,
   isDark,
   onOpenSettings,
@@ -55,6 +99,7 @@ export const Header: React.FC<HeaderProps> = ({
         0979.007.367
       </a>
     </div>
+    <VideoGuideButton apiUrl={apiUrl} />
     <div className="flex min-w-0 items-center gap-2">
       <button
         className="studio-model"

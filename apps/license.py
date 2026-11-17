@@ -401,7 +401,7 @@ def license_activate(body: ActivateBody):
 
 _cache_state: dict = {"at": 0.0, "ok": True}
 _CACHE_TTL = 5.0
-_OPEN_PREFIXES = ("/api/license/", "/api/app/announcement")
+_OPEN_PREFIXES = ("/api/license/", "/api/app/announcement", "/api/app/video")
 _OPEN_PATHS = frozenset({"/health", "/openapi.json", "/docs", "/docs/oauth2-redirect", "/voice-ai-mrhuynh.md"})
 
 

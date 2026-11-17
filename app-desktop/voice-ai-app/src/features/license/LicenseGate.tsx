@@ -1,4 +1,5 @@
 import {
+  AlarmClock,
   ArrowLeft,
   CheckCircle2,
   Copy,
@@ -15,6 +16,7 @@ import {
   type ReactNode,
   useCallback,
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
 } from "react";
@@ -338,6 +340,38 @@ const ActivationCard: React.FC<{
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
   const expired = status.state === "expired";
+  // Hết hạn dùng thử thật sự (không phải gói đã mua hết hạn, đồng hồ lùi hay dữ liệu bị sửa).
+  const trialOver =
+    expired && (!status.reason || status.reason === "time") && !status.plan;
+  const cardRef = useRef<HTMLDivElement>(null);
+  const [fit, setFit] = useState(1);
+
+  // Bảng gói luôn vừa khung hình, không có thanh cuộn: cửa sổ thấp thì thu nhỏ cả bảng lại.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: đo lại khi đổi màn hình con
+  useLayoutEffect(() => {
+    const el = cardRef.current;
+    if (!el) {
+      return;
+    }
+    const measure = () => {
+      const h = el.offsetHeight || 1;
+      const w = el.offsetWidth || 1;
+      const k = Math.min(
+        1,
+        (window.innerHeight - 16) / h,
+        (window.innerWidth - 16) / w
+      );
+      setFit(Math.max(0.5, Math.round(k * 1000) / 1000));
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    window.addEventListener("resize", measure);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", measure);
+    };
+  }, [view]);
 
   useEffect(() => {
     let alive = true;
@@ -423,17 +457,21 @@ const ActivationCard: React.FC<{
       ? "Quét mã QR để thanh toán"
       : view === "key"
         ? "Nhập key kích hoạt"
-        : expired
-          ? (status.reason && REASONS[status.reason]) ||
-            "Thời gian dùng thử 3 ngày đã kết thúc. Chọn gói để tiếp tục."
-          : status.plan === "timed"
-            ? "Đổi gói / Gia hạn: thời gian mua thêm được cộng dồn vào thời gian còn lại, không mất ngày."
-            : "Chọn gói sử dụng. Thanh toán xong ứng dụng tự kích hoạt.";
+        : trialOver
+          ? "Chọn gói sử dụng. Thanh toán xong ứng dụng tự kích hoạt."
+          : expired
+            ? (status.reason && REASONS[status.reason]) ||
+              "Thời gian dùng thử 3 ngày đã kết thúc. Chọn gói để tiếp tục."
+            : status.plan === "timed"
+              ? "Đổi gói / Gia hạn: thời gian mua thêm được cộng dồn vào thời gian còn lại, không mất ngày."
+              : "Chọn gói sử dụng. Thanh toán xong ứng dụng tự kích hoạt.";
 
   return (
     <div className="fixed inset-0 z-[100] flex select-none items-center justify-center bg-background/90 px-4 backdrop-blur-xl">
       <div
-        className={`relative flex max-h-[96vh] w-full ${view === "plans" ? "max-w-5xl" : "max-w-lg"} flex-col items-center overflow-y-auto overflow-x-hidden rounded-3xl border border-border/80 bg-card p-7 text-center shadow-2xl`}
+        className={`relative flex w-full ${view === "plans" ? "max-w-5xl" : "max-w-lg"} flex-col items-center overflow-hidden rounded-3xl border border-border/80 bg-card p-6 text-center shadow-2xl`}
+        ref={cardRef}
+        style={fit < 1 ? { transform: `scale(${fit})` } : undefined}
       >
         <div className="pointer-events-none absolute -top-20 -left-20 h-48 w-48 rounded-full bg-brand-500/20 blur-3xl" />
         <div className="pointer-events-none absolute -right-20 -bottom-20 h-48 w-48 rounded-full bg-cyan-500/20 blur-3xl" />
@@ -446,6 +484,21 @@ const ActivationCard: React.FC<{
           >
             <X className="h-4 w-4" />
           </button>
+        )}
+        {view === "plans" && trialOver && (
+          <div
+            className="relative mb-3 w-full max-w-3xl rounded-2xl border border-red-400/70 bg-gradient-to-r from-red-700 to-orange-700 px-4 py-2.5 text-white shadow-lg"
+            role="alert"
+          >
+            <div className="flex items-center justify-center gap-2 font-bold text-base">
+              <AlarmClock aria-hidden="true" className="h-5 w-5" />
+              Bạn đã hết thời gian trải nghiệm miễn phí
+            </div>
+            <div className="mt-0.5 text-red-100 text-xs">
+              Hãy chọn một gói bên dưới để tiếp tục sử dụng Voice AI - Mr.
+              Huỳnh.
+            </div>
+          </div>
         )}
         <img
           alt="Voice AI - Mr.Huỳnh"

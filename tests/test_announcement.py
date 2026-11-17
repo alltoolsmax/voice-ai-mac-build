@@ -53,3 +53,45 @@ def test_duong_dan_mo_khi_chua_kich_hoat():
     from apps import license as lic
     assert not lic._is_gated("/api/app/announcement")
     assert not lic._is_gated("/api/app/announcement/dismiss")
+    assert not lic._is_gated("/api/app/video")
+
+
+class _Resp:
+    def __init__(self, body):
+        self._b = body
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *a):
+        return False
+
+    def read(self):
+        return self._b
+
+
+def test_video_chi_nhan_https_va_nho_tam(monkeypatch):
+    import json as _j
+    calls = []
+
+    def fake(req, timeout=0, context=None):
+        calls.append(1)
+        return _Resp(_j.dumps({"url": "https://youtu.be/abc"}).encode())
+
+    monkeypatch.setattr(an.urllib.request, "urlopen", fake)
+    monkeypatch.setattr(an, "_video_cache", {"url": "", "at": 0.0})
+    assert an.video_url(1000) == "https://youtu.be/abc"
+    assert an.video_url(1010) == "https://youtu.be/abc" and len(calls) == 1  # chưa tới hạn hỏi lại
+    monkeypatch.setattr(an.urllib.request, "urlopen",
+                        lambda *a, **k: _Resp(_j.dumps({"url": "http://x.y"}).encode()))
+    assert an.video_url(1000 + an.VIDEO_CHECK_SECONDS + 1) == ""  # http bị loại
+
+
+def test_video_mat_mang_giu_link_cu(monkeypatch):
+    monkeypatch.setattr(an, "_video_cache", {"url": "https://youtu.be/old", "at": 0.0})
+
+    def boom(*a, **k):
+        raise OSError("offline")
+
+    monkeypatch.setattr(an.urllib.request, "urlopen", boom)
+    assert an.video_url(1000) == "https://youtu.be/old"
