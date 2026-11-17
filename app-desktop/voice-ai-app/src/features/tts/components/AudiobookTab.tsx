@@ -13,6 +13,7 @@ import type React from "react";
 import { useEffect, useRef, useState } from "react";
 import { extractPdfText, splitChapters, synthesizeSpeech } from "../api";
 import { downloadBlobAsFile } from "../audio-engine";
+import { LanguageSelect } from "../model-caps";
 import type { VoiceOption } from "../types";
 import { groupVoices, voiceOptionLabel } from "../voice-label";
 import { createZip } from "../zip";
@@ -342,6 +343,8 @@ export const AudiobookTab: React.FC<AudiobookTabProps> = ({
               </div>
             </div>
           )}
+
+          <LanguageSelect disabled={running} />
 
           <label className="space-y-1 text-xs">
             <span className="font-semibold text-foreground/90">

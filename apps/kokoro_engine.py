@@ -101,6 +101,33 @@ _LANG_FLAG_RE = re.compile(r"\([a-z]{2,3}(?:-[a-z]+)?\)")
 _LATIN_RE = re.compile(r"[A-Za-z][A-Za-z0-9'\-]*(?:\s+[A-Za-z][A-Za-z0-9'\-]*)*")
 
 
+def voice_keys(voices_dir, languages: Optional[set] = None) -> list:
+    """Mã giọng (af_heart...) trong thư mục giọng, đã sắp thứ tự; chỉ lấy tiếng trong `languages`
+    (None = mọi tiếng). Dùng cả khi chưa nạp mô hình, để liệt kê giọng (apps/voice_catalog.py)."""
+    return sorted((p.stem for p in Path(voices_dir).glob("*.bin")
+                   if _is_voice_key(p.stem)
+                   and (languages is None or LANGS[p.stem[0]].code in languages)),
+                  key=_sort_key)
+
+
+def voice_table(keys) -> tuple:
+    """(tên hiển thị -> mã giọng, tên hiển thị -> thông tin giọng) cho danh sách mã giọng."""
+    names = {_display_name(k): k for k in keys}
+    presets = {}
+    for name, key in names.items():
+        lang = LANGS[key[0]]
+        gioi, gioi_vi = _GENDER[key[1]]
+        tieng = f"{lang.name} ({lang.region})" if lang.region else lang.name
+        # "Giới · Kokoro · Tiếng": cùng khuôn "Giới · Vùng · Phong cách" mà
+        # /voices và giao diện tách theo dấu "·" (phần 3 hiện thành nhãn).
+        presets[name] = {
+            "gender": gioi,
+            "language": lang.code,
+            "description": f"{gioi_vi} · Kokoro · {tieng}",
+        }
+    return names, presets
+
+
 def _create_session(model_path: Path):
     import onnxruntime as ort
 
@@ -209,25 +236,10 @@ class KokoroTTS:
         `device`, khi đó `model_path` là `kokoro-v1_0.pth`. Không có: ONNX trên CPU."""
         from kokoro_onnx import Kokoro
 
-        keys = sorted((p.stem for p in Path(voices_dir).glob("*.bin")
-                       if _is_voice_key(p.stem)
-                       and (languages is None or LANGS[p.stem[0]].code in languages)),
-                      key=_sort_key)
+        keys = voice_keys(voices_dir, languages)
         if not keys:
             raise RuntimeError("Không tìm thấy giọng nào của Kokoro. Hãy tải lại mô hình.")
-        self._keys = {_display_name(k): k for k in keys}
-        self._preset_voices = {}
-        for name, key in self._keys.items():
-            lang = LANGS[key[0]]
-            gioi, gioi_vi = _GENDER[key[1]]
-            tieng = f"{lang.name} ({lang.region})" if lang.region else lang.name
-            # "Giới · Kokoro · Tiếng": cùng khuôn "Giới · Vùng · Phong cách" mà
-            # /voices và giao diện tách theo dấu "·" (phần 3 hiện thành nhãn).
-            self._preset_voices[name] = {
-                "gender": gioi,
-                "language": lang.code,
-                "description": f"{gioi_vi} · Kokoro · {tieng}",
-            }
+        self._keys, self._preset_voices = voice_table(keys)
         self._default_voice = next(iter(self._keys))
         # Ngôn ngữ đọc được = tiếng của các giọng đang hiện (đã lọc theo bộ tách âm
         # đã cài), theo thứ tự LANGUAGES. web_stream báo danh sách này ở /health.

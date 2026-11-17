@@ -110,6 +110,15 @@ _SENTENCES = re.compile(
     r"|(?<=[。！？])")  # dấu câu CJK không có dấu cách theo sau
 
 
+def preset_table() -> Dict[str, dict]:
+    """Thông tin 10 giọng có sẵn; không cần nạp mô hình (dùng cho apps/voice_catalog.py)."""
+    return {
+        v: {"gender": "female" if v[0] == "F" else "male",
+            "description": f"{'Nữ' if v[0] == 'F' else 'Nam'} · Đa ngôn ngữ · Supertonic 3"}
+        for v in VOICES
+    }
+
+
 def detect_language(text: str) -> str:
     """Đoán ngôn ngữ khi người gọi không nêu: đủ cho trường hợp hay gặp của app."""
     if _VI_LETTERS.search(text):
@@ -188,11 +197,7 @@ class SupertonicTTS:
         self._styles = {v: self._load_style(model_dir / "voice_styles" / f"{v}.json") for v in VOICES}
         self._dp, self._enc, self._est, self._voc = sessions or self._load_sessions(model_dir / "onnx")
         self._default_voice = DEFAULT_VOICE
-        self._preset_voices = {
-            v: {"gender": "female" if v[0] == "F" else "male",
-                "description": f"{'Nữ' if v[0] == 'F' else 'Nam'} · Đa ngôn ngữ · Supertonic 3"}
-            for v in VOICES
-        }
+        self._preset_voices = preset_table()
 
     @staticmethod
     def _load_sessions(onnx_dir: Path):

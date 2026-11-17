@@ -15,6 +15,7 @@ import {
 import type React from "react";
 import { useState } from "react";
 import { extractPdfText, parseSrt, type SrtCue, splitChapters } from "../api";
+import { LanguageSelect } from "../model-caps";
 import { readTextFile } from "../read-text-file";
 import { cleanExtractedText, describeCleanup } from "../text-cleanup";
 import type { HistoryEntry, PdfExtractionResult, VoiceOption } from "../types";
@@ -332,6 +333,8 @@ export const PdfReaderTab: React.FC<PdfReaderTabProps> = ({
             formats={FORMATS}
             onFile={handleFileSelect}
           />
+
+          <LanguageSelect disabled={isExtracting} />
 
           {extractResult && selectedFile && (
             <div className="doc-file">

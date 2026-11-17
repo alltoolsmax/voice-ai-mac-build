@@ -84,7 +84,7 @@ if os.getenv("VOICEAI_KOKORO_SELFTEST") == "1":
     run_kokoro_selftest()
 
 from vieneu import Vieneu
-from apps import ai_label, model_catalog, model_downloader
+from apps import ai_label, model_catalog, model_downloader, voice_catalog
 from apps.app_version import APP_VERSION
 
 SAMPLE_RATE = 48_000
@@ -249,22 +249,8 @@ def gpu_name() -> Optional[str]:
 
 def _custom_voices_path() -> Path:
     """File JSON riêng cho giọng do người dùng lưu lại (khác file giọng có sẵn
-    trong gói cài đặt, vốn có thể chỉ đọc) - cùng cách chọn thư mục với
-    `setup_hf_home()`/`gpu_installer.gpu_venv_dir()`."""
-    from apps.runtime_paths import app_root, _is_writable
-
-    name = current_model_info.get("name", "").lower()
-    if model_catalog.is_voxcpm(current_model_info.get("name")):
-        filename = "custom_voices_voxcpm2.json"   # khác định dạng với giọng VieNeu
-    else:
-        filename = "custom_voices_v3_nano.json" if "nano" in name else "custom_voices_v3_turbo.json"
-    d = app_root() / "models"
-    if _is_writable(d):
-        return d / filename
-    base = os.getenv("LOCALAPPDATA") or str(Path.home())
-    p = Path(base) / "VoiceAIMrHuynh" / filename
-    p.parent.mkdir(parents=True, exist_ok=True)
-    return p
+    trong gói cài đặt, vốn có thể chỉ đọc). Xem `voice_catalog.custom_voices_path`."""
+    return voice_catalog.custom_voices_path(current_model_info.get("name", ""))
 
 
 def _supertonic_dir() -> Path:
@@ -987,6 +973,90 @@ async def health():
     }
 
 
+def _voice_entries(engine, sample_rate: int) -> list:
+    """Danh sách giọng (dạng JSON của /voices) của một engine. Dùng chung cho `/voices`
+    (mô hình đang chạy) và `/api/voices/all` (cả mô hình chưa nạp, qua `apps/voice_catalog.py`)."""
+    out = []
+    vs = list(engine.list_preset_voices())
+    # Giọng mặc định của model (Hải Đăng ở v3 Turbo) lên đầu: giao diện chọn sẵn
+    # giọng đầu danh sách, và API bỏ trống voice_id cũng dùng giọng này. Trước đây
+    # thứ tự theo `featured` của file giọng nên giao diện chọn "Adam bựa" trong khi
+    # API mặc định "Hải Đăng".
+    default_voice = getattr(engine, "_default_voice", None)
+    vs.sort(key=lambda item: (item[1] if isinstance(item, (tuple, list)) and len(item) == 2
+                              else str(item)) != default_voice)
+    presets = getattr(engine, "_preset_voices", {})
+    khz = sample_rate // 1000
+    for item in vs:
+        if isinstance(item, (tuple, list)) and len(item) == 2:
+            label, vid = item
+            name_str = label
+            v_id = vid
+        else:
+            name_str = str(item)
+            v_id = str(item)
+
+        # v3 Turbo và v3 Nano đều kèm sẵn `gender` + mô tả "Giới · Vùng · Phong
+        # cách" trong preset; dùng thẳng thay vì đoán từ tên. Đoán theo chuỗi chỉ
+        # còn là đường lui cho engine cũ (v1/v2) không có metadata: ở đó
+        # "Nam Anh" (miền Bắc) vẫn bị đoán nhầm thành giọng miền Nam.
+        preset = presets.get(v_id) if isinstance(presets.get(v_id), dict) else {}
+        mo_ta = str(preset.get("description") or "").strip()
+        gioi_tinh = str(preset.get("gender") or "").strip().lower()
+        phan = [p.strip() for p in mo_ta.split("·")]
+        vung = phan[1].lower() if len(phan) > 2 else ""
+
+        if gioi_tinh not in ("male", "female"):
+            name_lower = name_str.lower()
+            is_female = any(x in name_lower for x in ["huyền", "linh", "mai", "nga", "nữ", "female", "thảo", "hương", "ngọc", "lan"])
+            is_male = any(x in name_lower for x in ["đức", "nam", "tuấn", "hùng", "bảo", "quân", "male", "vĩnh", "minh"])
+            gioi_tinh = "female" if is_female else ("male" if is_male else "neutral")
+
+        if preset.get("language"):
+            region = None  # giọng Kokoro: mỗi giọng một thứ tiếng, không có vùng miền
+        elif vung in ("nam", "miền nam"):
+            region = "South"
+        elif vung in ("bắc", "miền bắc"):
+            region = "North"
+        elif vung == "đa ngôn ngữ":
+            region = None  # giọng Supertonic: không có vùng miền tiếng Việt
+        else:
+            name_lower = name_str.lower()
+            region = "South" if ("nam" in name_lower or "sg" in name_lower or "sài gòn" in name_lower) else "North"
+
+        entry = {
+            "id": v_id,
+            "isCloned": bool(preset.get("is_custom", False)),
+            # Giọng tác giả VieNeu chọn (xếp đầu danh sách), giao diện gắn ⭐.
+            "featured": preset.get("featured") is not None,
+            "name": v_id,
+            "gender": gioi_tinh,
+            "region": region,
+            "description": f"{mo_ta} · {khz} kHz" if mo_ta else f"Giọng đọc {v_id} ({khz} kHz)",
+        }
+        if preset.get("language"):
+            # Tiếng mà giọng được huấn luyện (Kokoro), mã như `languages` ở /health.
+            # Giao diện chọn luôn ngôn ngữ đó khi người dùng chọn giọng.
+            entry["language"] = str(preset["language"])
+        out.append(entry)
+    return out
+
+
+@app.get("/api/voices/all", include_in_schema=False)
+async def all_voices():
+    """Giọng của mọi mô hình đã tải, gộp một danh sách cho ô "Giọng đọc" (xem apps/voice_catalog.py)."""
+    require_model()
+    has_cuda = _effective_has_cuda()
+    has_torch = _torch_installed()
+    rows = await asyncio.to_thread(
+        lambda: [_mo_ta_model(s, has_torch=has_torch, has_cuda=has_cuda) for s in model_catalog.MODELS])
+    return await asyncio.to_thread(
+        voice_catalog.collect,
+        active_name=current_model_info.get("name"), active_engine=vieneu,
+        active_sample_rate=current_model_info.get("sample_rate", SAMPLE_RATE),
+        rows=rows, preferred=_saved_model(), entries_of=_voice_entries)
+
+
 @app.get("/voices")
 async def voices():
     """Giọng của mô hình đang chạy, gồm giọng nhân bản đã lưu nếu mô hình hỗ trợ.
@@ -997,69 +1067,7 @@ async def voices():
     """
     require_model()
     try:
-        vs = list(vieneu.list_preset_voices())
-        # Giọng mặc định của model (Hải Đăng ở v3 Turbo) lên đầu: giao diện chọn sẵn
-        # giọng đầu danh sách, và API bỏ trống voice_id cũng dùng giọng này. Trước đây
-        # thứ tự theo `featured` của file giọng nên giao diện chọn "Adam bựa" trong khi
-        # API mặc định "Hải Đăng".
-        default_voice = getattr(vieneu, "_default_voice", None)
-        vs.sort(key=lambda item: (item[1] if isinstance(item, (tuple, list)) and len(item) == 2
-                                  else str(item)) != default_voice)
-        presets = getattr(vieneu, "_preset_voices", {})
-        khz = current_model_info.get("sample_rate", SAMPLE_RATE) // 1000
-        out = []
-        for item in vs:
-            if isinstance(item, (tuple, list)) and len(item) == 2:
-                label, vid = item
-                name_str = label
-                v_id = vid
-            else:
-                name_str = str(item)
-                v_id = str(item)
-
-            # v3 Turbo và v3 Nano đều kèm sẵn `gender` + mô tả "Giới · Vùng · Phong
-            # cách" trong preset; dùng thẳng thay vì đoán từ tên. Đoán theo chuỗi chỉ
-            # còn là đường lui cho engine cũ (v1/v2) không có metadata: ở đó
-            # "Nam Anh" (miền Bắc) vẫn bị đoán nhầm thành giọng miền Nam.
-            preset = presets.get(v_id) if isinstance(presets.get(v_id), dict) else {}
-            mo_ta = str(preset.get("description") or "").strip()
-            gioi_tinh = str(preset.get("gender") or "").strip().lower()
-            phan = [p.strip() for p in mo_ta.split("·")]
-            vung = phan[1].lower() if len(phan) > 2 else ""
-
-            if gioi_tinh not in ("male", "female"):
-                name_lower = name_str.lower()
-                is_female = any(x in name_lower for x in ["huyền", "linh", "mai", "nga", "nữ", "female", "thảo", "hương", "ngọc", "lan"])
-                is_male = any(x in name_lower for x in ["đức", "nam", "tuấn", "hùng", "bảo", "quân", "male", "vĩnh", "minh"])
-                gioi_tinh = "female" if is_female else ("male" if is_male else "neutral")
-
-            if preset.get("language"):
-                region = None  # giọng Kokoro: mỗi giọng một thứ tiếng, không có vùng miền
-            elif vung in ("nam", "miền nam"):
-                region = "South"
-            elif vung in ("bắc", "miền bắc"):
-                region = "North"
-            elif vung == "đa ngôn ngữ":
-                region = None  # giọng Supertonic: không có vùng miền tiếng Việt
-            else:
-                name_lower = name_str.lower()
-                region = "South" if ("nam" in name_lower or "sg" in name_lower or "sài gòn" in name_lower) else "North"
-
-            entry = {
-                "id": v_id,
-                "isCloned": bool(preset.get("is_custom", False)),
-                # Giọng tác giả VieNeu chọn (xếp đầu danh sách), giao diện gắn ⭐.
-                "featured": preset.get("featured") is not None,
-                "name": v_id,
-                "gender": gioi_tinh,
-                "region": region,
-                "description": f"{mo_ta} · {khz} kHz" if mo_ta else f"Giọng đọc {v_id} ({khz} kHz)",
-            }
-            if preset.get("language"):
-                # Tiếng mà giọng được huấn luyện (Kokoro), mã như `languages` ở /health.
-                # Giao diện chọn luôn ngôn ngữ đó khi người dùng chọn giọng.
-                entry["language"] = str(preset["language"])
-            out.append(entry)
+        out = _voice_entries(vieneu, current_model_info.get("sample_rate", SAMPLE_RATE))
         return out or [{"id": "Minh Đức", "name": "Minh Đức", "gender": "male", "region": "North", "description": "Giọng chuẩn Bắc"}]
     except Exception as e:
         return [{"id": "default", "name": f"⚠️ {e}", "gender": "neutral", "region": "North", "description": str(e)}]

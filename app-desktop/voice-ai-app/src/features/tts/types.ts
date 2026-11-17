@@ -1,6 +1,8 @@
 export interface VoiceOption {
   avatar?: string;
   description?: string;
+  /** Nhóm mô hình của giọng (danh sách giọng gộp): turbo, nano, kokoro, supertonic, voxcpm2. */
+  family?: string;
   /** Giọng tác giả VieNeu chọn (xếp đầu danh sách). */
   featured?: boolean;
   gender?: "male" | "female" | "neutral";
@@ -8,6 +10,10 @@ export interface VoiceOption {
   isCloned?: boolean;
   /** Tiếng mà giọng được huấn luyện (Kokoro: "en", "fr"...); không có với VieNeu/Supertonic. */
   language?: string;
+  /** Ngôn ngữ giọng đọc được ("*" = mọi ngôn ngữ). Chỉ có ở danh sách giọng gộp. */
+  languages?: string[];
+  /** Mô hình cần nạp để đọc bằng giọng này (không hiển thị). */
+  model?: string;
   name: string;
   region?: "North" | "South" | "Central" | "Standard" | null;
 }

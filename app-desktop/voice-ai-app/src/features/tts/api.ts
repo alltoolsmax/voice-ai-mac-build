@@ -95,6 +95,27 @@ export async function fetchVoices(
   return fetchStartupJson<VoiceOption[]>(`${clean(apiUrl)}/voices`, signal);
 }
 
+export interface AllVoices {
+  active_family: string | null;
+  languages: LanguageOption[];
+  voices: VoiceOption[];
+}
+
+/** Giọng của mọi mô hình đã tải, gộp một danh sách. Lỗi (máy chủ cũ) thì trả null để dùng /voices. */
+export async function fetchAllVoices(
+  apiUrl: string,
+  signal?: AbortSignal
+): Promise<AllVoices | null> {
+  try {
+    return await fetchStartupJson<AllVoices>(
+      `${clean(apiUrl)}/api/voices/all`,
+      signal
+    );
+  } catch {
+    return null;
+  }
+}
+
 export interface ServerPortSettings {
   active_port: number;
   port: number;

@@ -21,6 +21,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import env from "@/config/env";
 import { splashUpdate } from "@/lib/splash";
 import {
+  type AllVoices,
   type AppUpdateInfo,
   checkAppUpdate,
   checkServerHealth,
@@ -28,6 +29,7 @@ import {
   convertToMp3,
   deleteCustomVoice,
   deleteHistory,
+  fetchAllVoices,
   fetchHistory,
   fetchUiPrefs,
   fetchVoices,
@@ -36,6 +38,7 @@ import {
   revealHistory,
   saveHistory,
   saveUiPrefs,
+  switchModel,
   type UiPrefs,
 } from "./api";
 import { downloadBlobAsFile, StreamingAudioEngine } from "./audio-engine";
@@ -205,6 +208,8 @@ export const TtsStudio: React.FC = () => {
 
   // Dữ liệu đọc văn bản
   const [voices, setVoices] = useState<VoiceOption[]>([]);
+  // Giọng của mọi mô hình đã tải, gộp một danh sách cho ô "Giọng đọc"; null = máy chủ cũ.
+  const [allVoices, setAllVoices] = useState<AllVoices | null>(null);
   // Kha nang cua mo hinh dang chay (tu /health): ngon ngu doc duoc, co nhan ban khong.
   const [modelLanguages, setModelLanguages] = useState<LanguageOption[]>([]);
   const [supportsCloning, setSupportsCloning] = useState(true);
@@ -455,10 +460,14 @@ export const TtsStudio: React.FC = () => {
         }
 
         setLoadingMessage("Đang lấy danh sách giọng đọc...");
-        const voiceList = await fetchVoices(settings.apiUrl, signal);
+        const [voiceList, everyVoice] = await Promise.all([
+          fetchVoices(settings.apiUrl, signal),
+          fetchAllVoices(settings.apiUrl, signal),
+        ]);
         if (signal.aborted) {
           return "failed";
         }
+        setAllVoices(everyVoice);
         audioEngineRef.current.setSampleRate(health.sample_rate || 48_000);
         setModelLanguages(health.languages ?? []);
         // Doi doan mau theo mo hinh, chi khi nguoi dung chua sua doan mau.
@@ -505,6 +514,41 @@ export const TtsStudio: React.FC = () => {
     });
   }, [settings.apiUrl, connectionAttempt]);
 
+  // Chọn giọng ở danh sách gộp. Giọng của mô hình đang chạy thì chọn luôn; giọng của mô hình khác
+  // thì nạp mô hình đó (vài giây, màn hình chờ báo đang chuyển) rồi giữ đúng giọng đã chọn.
+  const selectedVoiceRef = useRef("");
+  selectedVoiceRef.current = selectedVoiceId;
+  const handleSelectVoice = useCallback(
+    (voiceId: string) => {
+      const voice = allVoices?.voices.find((v) => v.id === voiceId);
+      const previousId = selectedVoiceRef.current;
+      setSelectedVoiceId(voiceId);
+      if (
+        !(voice?.model && voice.family) ||
+        voice.family === allVoices?.active_family
+      ) {
+        return;
+      }
+      setErrorMessage(null);
+      setLoadingState("starting");
+      setLoadingMessage("Đang chuyển sang mô hình của giọng đã chọn...");
+      setIsInitialLoading(true);
+      switchModel(settings.apiUrl, voice.model)
+        .then(() => {
+          appliedDefaultVoice.current = "";
+          restartConnection();
+        })
+        .catch((error) => {
+          setSelectedVoiceId(previousId);
+          setErrorMessage(
+            error instanceof Error ? error.message : String(error)
+          );
+          restartConnection();
+        });
+    },
+    [allVoices, restartConnection, settings.apiUrl]
+  );
+
   // Giọng tuỳ chỉnh đã được server lưu thật (xem VoiceCloningTab) - chỉ cần nạp
   // lại danh sách rồi chọn nó, không còn bookmark giả ở localStorage nữa.
   const handleAddCustomVoice = async (voiceId: string) => {
@@ -515,6 +559,7 @@ export const TtsStudio: React.FC = () => {
       );
     }
     setVoices(voiceList);
+    setAllVoices(await fetchAllVoices(settings.apiUrl));
     setSelectedVoiceId(voiceId);
   };
 
@@ -524,6 +569,7 @@ export const TtsStudio: React.FC = () => {
     await deleteCustomVoice(settings.apiUrl, voiceId);
     const voiceList = await fetchVoices(settings.apiUrl);
     setVoices(voiceList);
+    setAllVoices(await fetchAllVoices(settings.apiUrl));
     setSelectedVoiceId((previous) =>
       voiceList.some((voice) => voice.id === previous)
         ? previous
@@ -744,7 +790,7 @@ export const TtsStudio: React.FC = () => {
   }, [connectionStatus, settings.apiUrl, appUpdate]);
 
   const selectedVoiceName =
-    voices.find((v) => v.id === selectedVoiceId)?.name ||
+    (allVoices?.voices ?? voices).find((v) => v.id === selectedVoiceId)?.name ||
     selectedVoiceId ||
     "Mặc định";
 
@@ -754,6 +800,7 @@ export const TtsStudio: React.FC = () => {
   return (
     <ModelCapsProvider
       languages={modelLanguages}
+      selectableLanguages={allVoices?.languages}
       supportsCloning={supportsCloning}
       supportsEmotions={supportsEmotions}
     >
@@ -928,9 +975,11 @@ export const TtsStudio: React.FC = () => {
                     <LanguageSelect
                       className="rounded-xl border border-border/80 bg-card px-3 py-2 shadow-sm"
                       disabled={isGenerating}
+                      scope="all"
                     />
                     <div className="min-h-0 flex-1">
                       <VoiceSelector
+                        activeFamily={allVoices?.active_family}
                         apiUrl={settings.apiUrl}
                         disabled={isGenerating}
                         onChangeSpeed={(s) => {
@@ -939,10 +988,10 @@ export const TtsStudio: React.FC = () => {
                         }}
                         onCloneVoice={() => setActiveTab("clone")}
                         onDeleteVoice={handleDeleteCustomVoice}
-                        onSelectVoice={setSelectedVoiceId}
+                        onSelectVoice={handleSelectVoice}
                         selectedVoiceId={selectedVoiceId}
                         speed={speed}
-                        voices={voices}
+                        voices={allVoices?.voices ?? voices}
                       />
                     </div>
                     <details className="studio-generation-options">

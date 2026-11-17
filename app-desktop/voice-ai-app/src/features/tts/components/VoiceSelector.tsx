@@ -126,7 +126,24 @@ function PreviewVoiceButton({
   );
 }
 
+/** Ngôn ngữ giọng đọc được: danh sách gộp ghi `languages`; máy chủ cũ chỉ có `language` (Kokoro). */
+const voiceLanguages = (voice: VoiceOption): string[] =>
+  voice.languages ?? (voice.language ? [voice.language] : []);
+
+/** Giọng đọc được ngôn ngữ đã chọn? Chưa chọn ("" = tự nhận) thì giọng nào cũng hiện. */
+const voiceMatches = (voice: VoiceOption, language: string): boolean => {
+  const langs = voiceLanguages(voice);
+  return (
+    !language ||
+    langs.length === 0 ||
+    langs.includes("*") ||
+    langs.includes(language)
+  );
+};
+
 interface VoiceSelectorProps {
+  /** Nhóm mô hình đang chạy: nghe thử/xoá chỉ dùng được với giọng của nhóm này. */
+  activeFamily?: string | null;
   /** Có thì hiện nút nghe thử trên từng giọng. */
   apiUrl?: string;
   disabled?: boolean;
@@ -141,6 +158,7 @@ interface VoiceSelectorProps {
 }
 
 export const VoiceSelector: React.FC<VoiceSelectorProps> = ({
+  activeFamily,
   apiUrl,
   onCloneVoice,
   voices,
@@ -152,13 +170,12 @@ export const VoiceSelector: React.FC<VoiceSelectorProps> = ({
   disabled,
 }) => {
   // Giong Supertonic doc moi ngon ngu: the giong ghi ngon ngu dang chon.
-  const { language, languageName, languages, setLanguage } = useModelCaps();
-  // Chon tieng o "Ngon ngu van ban" thi chi hien giong Kokoro cua tieng do. Giong
-  // khong gan tieng (VieNeu, Supertonic, giong nhan ban) luon hien.
-  const matchesLanguage = (voice: VoiceOption) =>
-    !(language && voice.language) || voice.language === language;
+  const { language, languageName, selectableLanguages, setLanguage } =
+    useModelCaps();
+  const matchesLanguage = (voice: VoiceOption) => voiceMatches(voice, language);
   // Giong va tieng phai khop nhau. Ben nao vua doi thi ben kia theo:
-  // - giong doi (bam chon, giong mo san trong Cai dat): tieng theo giong;
+  // - giong doi (bam chon, giong mo san trong Cai dat): giong chi doc mot tieng thi tieng theo giong,
+  //   giong khong khop thi ve "Tu nhan";
   // - tieng doi (o "Ngon ngu van ban"): chuyen sang giong dau tien cua tieng do,
   //   khong thi bam Doc van ra giong cu.
   const lastVoiceId = useRef(selectedVoiceId);
@@ -166,22 +183,25 @@ export const VoiceSelector: React.FC<VoiceSelectorProps> = ({
     const current = voices.find((v) => v.id === selectedVoiceId);
     const voiceChanged = lastVoiceId.current !== selectedVoiceId;
     lastVoiceId.current = selectedVoiceId;
-    if (!(language && current?.language) || current.language === language) {
+    if (!(language && current) || voiceMatches(current, language)) {
       return;
     }
     if (voiceChanged) {
-      if (languages.some((l) => l.code === current.language)) {
-        setLanguage(current.language);
-      }
+      const own = voiceLanguages(current);
+      setLanguage(
+        own.length === 1 && selectableLanguages.some((l) => l.code === own[0])
+          ? own[0]
+          : ""
+      );
       return;
     }
-    const first = voices.find((v) => v.language === language);
+    const first = voices.find((v) => voiceMatches(v, language));
     if (first) {
       onSelectVoice(first.id);
     }
   }, [
     language,
-    languages,
+    selectableLanguages,
     voices,
     selectedVoiceId,
     onSelectVoice,
@@ -288,18 +308,27 @@ export const VoiceSelector: React.FC<VoiceSelectorProps> = ({
       setDeletingId(null);
     }
   };
+  // Giọng Kokoro/Supertonic hiện nguyên mô tả của mô hình (như khi chỉ có mô hình đó); máy chủ cũ
+  // không ghi nhóm thì theo việc mô hình đang chạy có nhiều ngôn ngữ không.
+  const rawDescription = (voice: VoiceOption) =>
+    voice.family
+      ? voice.family === "kokoro" || voice.family === "supertonic"
+      : selectableLanguages.length > 0;
+  // Giọng của mô hình chưa nạp: chọn xong mới nạp, rồi mới nghe thử/xoá được.
+  const isActiveModel = (voice: VoiceOption) =>
+    !(voice.family && activeFamily) || voice.family === activeFamily;
   // Tách khỏi vòng map để giữ độ phức tạp của component trong ngưỡng lint.
   const renderActions = (voice: VoiceOption, isSelected: boolean) => (
     <div className="flex items-center gap-1.5">
       {apiUrl && (
         <PreviewVoiceButton
-          disabled={disabled}
+          disabled={disabled || !isActiveModel(voice)}
           name={voice.name}
           onToggle={() => togglePreview(voice)}
           state={previewId === voice.id ? previewState : "idle"}
         />
       )}
-      {onDeleteVoice && voice.isCloned && (
+      {onDeleteVoice && voice.isCloned && isActiveModel(voice) && (
         <DeleteVoiceButton
           busy={deletingId === voice.id}
           disabled={disabled || deletingId !== null}
@@ -480,7 +509,7 @@ export const VoiceSelector: React.FC<VoiceSelectorProps> = ({
                         )}
                       </div>
                       <p className="line-clamp-1 text-muted-foreground text-xs">
-                        {languages.length > 0
+                        {rawDescription(voice)
                           ? describeVoice(voice.description ?? "", languageName)
                           : voiceDetail(voice) || "Giọng đọc có sẵn"}
                       </p>

@@ -15,12 +15,14 @@ interface ModelCaps {
   /** Doc duoc tieng Viet khong (VieNeu, Supertonic: co; Kokoro: khong). Tu dien
    * phat am viet theo cach doc tieng Viet nen chi dung khi co. */
   readsVietnamese: boolean;
+  /** Ngon ngu chon duoc o danh sach giong gop (hop cua moi mo hinh da tai). Chi co mo hinh
+   * dang chay thi bang `languages`. */
+  selectableLanguages: LanguageOption[];
   setLanguage: (code: string) => void;
   supportsCloning: boolean;
   supportsEmotions: boolean;
 }
 
-const DEFAULT_LANGUAGE = "en";
 const MULTILINGUAL = "Đa ngôn ngữ";
 
 /** Mo ta giong: "Nữ · Đa ngôn ngữ · …" -> "Nữ · Tiếng Anh · …" theo ngon ngu dang chon. */
@@ -38,6 +40,7 @@ const ModelCapsContext = createContext<ModelCaps>({
   languageName: "",
   languages: [],
   readsVietnamese: true,
+  selectableLanguages: [],
   setLanguage: () => undefined,
   supportsCloning: true,
   supportsEmotions: true,
@@ -50,23 +53,34 @@ export function useModelCaps(): ModelCaps {
 export const ModelCapsProvider: React.FC<{
   children: React.ReactNode;
   languages: LanguageOption[];
+  /** Ngon ngu cua danh sach giong gop; khong truyen thi chi co ngon ngu cua mo hinh dang chay. */
+  selectableLanguages?: LanguageOption[];
   supportsCloning: boolean;
   supportsEmotions: boolean;
-}> = ({ children, languages, supportsCloning, supportsEmotions }) => {
-  // Mac dinh tieng Anh: mo hinh nhieu ngon ngu dung cho van ban tieng nuoc ngoai.
-  // "" = tu nhan theo chu.
-  const [language, setLanguage] = useState(DEFAULT_LANGUAGE);
+}> = ({
+  children,
+  languages,
+  selectableLanguages: union,
+  supportsCloning,
+  supportsEmotions,
+}) => {
+  // "" = tu nhan theo chu (hien moi giong). Chon mot ngon ngu thi danh sach giong loc theo no.
+  const [language, setLanguage] = useState("");
+  const selectableLanguages = union && union.length > 0 ? union : languages;
 
   useEffect(() => {
+    // Chi gui cho API khi mo hinh dang chay doc duoc tieng do; chon tieng cua mo hinh khac
+    // thi danh sach giong se chuyen sang mo hinh do (VoiceSelector).
     const valid = languages.some((l) => l.code === language);
     setRequestLanguage(valid ? language : null);
-    if (languages.length > 0 && language && !valid) {
-      setLanguage(DEFAULT_LANGUAGE);
+    if (language && !selectableLanguages.some((l) => l.code === language)) {
+      setLanguage("");
     }
-  }, [language, languages]);
+  }, [language, languages, selectableLanguages]);
 
   const languageName =
-    languages.find((l) => l.code === language)?.name ?? "Tự nhận ngôn ngữ";
+    selectableLanguages.find((l) => l.code === language)?.name ??
+    "Tự nhận ngôn ngữ";
   const readsVietnamese =
     languages.length === 0 || languages.some((l) => l.code === "vi");
   const value = useMemo(
@@ -75,6 +89,7 @@ export const ModelCapsProvider: React.FC<{
       languageName,
       languages,
       readsVietnamese,
+      selectableLanguages,
       setLanguage,
       supportsCloning,
       supportsEmotions,
@@ -84,6 +99,7 @@ export const ModelCapsProvider: React.FC<{
       languageName,
       languages,
       readsVietnamese,
+      selectableLanguages,
       supportsCloning,
       supportsEmotions,
     ]
@@ -95,13 +111,21 @@ export const ModelCapsProvider: React.FC<{
   );
 };
 
-/** O chon ngon ngu doc; khong hien gi khi mo hinh chi doc tieng Viet (VieNeu). */
+/** O chon ngon ngu doc; khong hien gi khi chi co mot ngon ngu de chon (VieNeu).
+ * `scope="all"`: ngon ngu cua moi mo hinh da tai (o cot giong doc, chon xong tu chuyen giong/mo hinh);
+ * mac dinh chi ngon ngu cua mo hinh dang chay (cac tab chi dung giong cua mo hinh do). */
 export const LanguageSelect: React.FC<{
   className?: string;
   disabled?: boolean;
-}> = ({ className, disabled }) => {
-  const { language, languages, setLanguage } = useModelCaps();
-  if (languages.length === 0) {
+  scope?: "all" | "active";
+}> = ({ className, disabled, scope = "active" }) => {
+  const caps = useModelCaps();
+  const { language, setLanguage } = caps;
+  const languages = scope === "all" ? caps.selectableLanguages : caps.languages;
+  if (
+    languages.length === 0 ||
+    (scope === "all" && languages.length < 2 && caps.languages.length === 0)
+  ) {
     return null;
   }
   return (
