@@ -5,7 +5,7 @@
   cho tới bản kế tiếp; thanh báo nhỏ và nút kiểm tra tay vẫn còn.
 
 - Lúc mở app, giao diện gọi GET /api/app/update. Server hỏi máy chủ phát hành tối đa một lần
-  mỗi ngày (kết quả lưu ở %LOCALAPPDATA%\\VoiceAIMrHuynh\\update-check.json), chờ tối
+  mỗi 5 phút (kết quả lưu ở %LOCALAPPDATA%\\VoiceAIMrHuynh\\update-check.json), chờ tối
   đa 5 giây; mất mạng thì trả `error`, giao diện im lặng.
 - MẶC ĐỊNH BẬT (để người dùng biết có bản mới và biểu phí mới). Tắt được bằng
   PUT /api/app/update-check; khi tắt, chỉ nút kiểm tra tay (force=1) mới hỏi máy chủ.
@@ -34,7 +34,7 @@ from apps.runtime_paths import https_context
 # Máy chủ phát hành: trả JSON {"version", "url", "highlights"} (file version.json trên hosting).
 UPDATE_URL = os.environ.get("VOICEAI_UPDATE_URL", "https://active.mrhuynh.net/api/app/version")
 RELEASES_PAGE = "https://zalo.me/0979007367"
-CHECK_INTERVAL_SECONDS = 24 * 3600
+CHECK_INTERVAL_SECONDS = 5 * 60
 TIMEOUT_SECONDS = 5
 MAX_HIGHLIGHTS = 6
 _MARKDOWN = re.compile(r"[*_`]|\[([^\]]*)\]\([^)]*\)")
