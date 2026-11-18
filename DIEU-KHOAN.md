@@ -22,8 +22,8 @@ các mô hình giọng nói của bên thứ ba:
   theo giấy phép GPL-3.0 (phonemizer, espeak-ng); các thành phần này không nằm trong bộ cài;
 - **VoxCPM2** (OpenBMB, giấy phép Apache-2.0) cho thiết kế giọng và nhân bản giọng trên
   máy có GPU NVIDIA, chỉ tải về khi bạn chọn;
-- **VieNeu-TTS v3 Nano** (Phạm Nguyễn Ngọc Bảo, bản thử nghiệm chạy trên CPU), chỉ tải về
-  khi bạn chọn; giấy phép của mô hình do tác giả ghi trên trang mô hình.
+- **VieNeu-TTS v3 Nano** (Phạm Nguyễn Ngọc Bảo, giấy phép Apache-2.0, bản thử nghiệm chạy
+  trên CPU), chỉ tải về khi bạn chọn.
 
 Các mô hình thuộc về tác giả của chúng; Voice AI - Mr.Huỳnh là ứng dụng độc lập, không phải sản
 phẩm chính thức của VieNeu-TTS, Supertone, Kokoro hay OpenBMB. Ứng dụng chạy **hoàn toàn trên máy tính của bạn**:

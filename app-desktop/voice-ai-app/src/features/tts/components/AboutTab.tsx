@@ -199,7 +199,7 @@ export const AboutTab: React.FC<AboutTabProps> = ({
           Supertonic 3: OpenRAIL-M (cấm mạo danh, lừa đảo, đăng nội dung AI
           không ghi rõ) · Kokoro-82M: Apache 2.0 (bộ tách âm tải thêm có phần
           GPL-3.0, không nằm trong bộ cài) · VoxCPM2: Apache 2.0 (cấm mạo danh,
-          lừa đảo, thông tin sai lệch).
+          lừa đảo, thông tin sai lệch) · VieNeu-TTS v3 Nano: Apache 2.0.
         </p>
       </div>
 
