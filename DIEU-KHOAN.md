@@ -1,14 +1,17 @@
 # Điều khoản sử dụng - Voice AI - Mr.Huỳnh
 
-Phiên bản điều khoản: **1.3**
+Phiên bản điều khoản: **1.4**
 
 Khi bấm **"Tôi đồng ý"** lúc cài đặt hoặc mở ứng dụng, bạn xác nhận đã đọc, hiểu và chấp
 nhận các điều khoản dưới đây. Nếu không đồng ý, vui lòng không sử dụng ứng dụng.
 
 ## 1. Ứng dụng và dữ liệu của bạn
 
-Voice AI - Mr.Huỳnh là phần mềm miễn phí, mã nguồn mở (Apache-2.0) chuyển văn bản thành
-giọng nói. Ứng dụng dùng các mô hình giọng nói của bên thứ ba:
+Voice AI - Mr.Huỳnh là phần mềm chuyển văn bản thành giọng nói, xây dựng trên mã nguồn mở
+(Apache-2.0). Ứng dụng được phân phối kèm key kích hoạt: có thời gian dùng thử và các gói
+trả phí theo thời hạn hoặc vĩnh viễn; quyền dùng bản phân phối này theo đúng gói key bạn
+đã kích hoạt. Giấy phép Apache-2.0 của mã nguồn gốc vẫn được giữ nguyên. Ứng dụng dùng
+các mô hình giọng nói của bên thứ ba:
 
 - **VieNeu-TTS** (tác giả Phạm Nguyễn Ngọc Bảo, giấy phép Apache-2.0) cho tiếng Việt, kèm
   sẵn trong bộ cài;
@@ -16,10 +19,14 @@ giọng nói. Ứng dụng dùng các mô hình giọng nói của bên thứ ba
   khi bạn chọn;
 - **Kokoro-82M** (hexgrad, giấy phép Apache-2.0) cho giọng bản xứ nước ngoài, chỉ tải về
   khi bạn chọn. Khi đó máy bạn tự tải thêm bộ tách âm từ PyPI, trong đó có thành phần
-  theo giấy phép GPL-3.0 (phonemizer, espeak-ng); các thành phần này không nằm trong bộ cài.
+  theo giấy phép GPL-3.0 (phonemizer, espeak-ng); các thành phần này không nằm trong bộ cài;
+- **VoxCPM2** (OpenBMB, giấy phép Apache-2.0) cho thiết kế giọng và nhân bản giọng trên
+  máy có GPU NVIDIA, chỉ tải về khi bạn chọn;
+- **VieNeu-TTS v3 Nano** (Phạm Nguyễn Ngọc Bảo, bản thử nghiệm chạy trên CPU), chỉ tải về
+  khi bạn chọn; giấy phép của mô hình do tác giả ghi trên trang mô hình.
 
 Các mô hình thuộc về tác giả của chúng; Voice AI - Mr.Huỳnh là ứng dụng độc lập, không phải sản
-phẩm chính thức của VieNeu-TTS, Supertone hay Kokoro. Ứng dụng chạy **hoàn toàn trên máy tính của bạn**:
+phẩm chính thức của VieNeu-TTS, Supertone, Kokoro hay OpenBMB. Ứng dụng chạy **hoàn toàn trên máy tính của bạn**:
 không thu thập, không gửi đi văn bản, âm thanh hay thông tin cá nhân nào. Tác giả không
 nhận, không xem và không kiểm soát nội dung bạn tạo ra.
 
@@ -77,17 +84,17 @@ bằng AI"**.
 - Bạn **tự chịu toàn bộ trách nhiệm** về nội dung mình tạo ra và cách sử dụng nội dung
   đó (ví dụ: lồng tiếng video, podcast, sách nói), kể cả khi cho phần mềm khác gọi API
   trên máy bạn.
-- Ứng dụng được cung cấp **miễn phí và "nguyên trạng"**, không kèm bất kỳ bảo đảm nào.
-  Trong phạm vi pháp luật cho phép, tác giả Voice AI - Mr.Huỳnh và tác giả các mô hình
-  (VieNeu-TTS, Supertone, Kokoro) không chịu trách nhiệm về nội dung bạn tạo ra, về các vấn đề
+- Ứng dụng được cung cấp **"nguyên trạng"**, không kèm bất kỳ bảo đảm nào ngoài những
+  gì pháp luật bắt buộc. Trong phạm vi pháp luật cho phép, tác giả Voice AI - Mr.Huỳnh
+  và tác giả các mô hình (VieNeu-TTS, Supertone, Kokoro, OpenBMB) không chịu trách nhiệm về nội dung bạn tạo ra, về các vấn đề
   pháp lý hay thiệt hại phát sinh từ việc sử dụng ứng dụng.
 - Các giới hạn trách nhiệm trên không loại trừ nghĩa vụ hoặc trách nhiệm bắt buộc
   theo pháp luật của tác giả ứng dụng hoặc của bất kỳ bên nào có liên quan.
 
 ## 7. Điều khoản chung
 
-Bạn được sử dụng ứng dụng miễn phí cho mục đích cá nhân và thương mại, trong khuôn khổ
-các điều khoản này. Tên và biểu tượng "Voice AI - Mr.Huỳnh" thuộc về tác giả. Điều khoản có
+Bạn được sử dụng ứng dụng cho mục đích cá nhân và thương mại, trong thời hạn và phạm vi của
+gói key đã kích hoạt, và trong khuôn khổ các điều khoản này. Tên và biểu tượng "Voice AI - Mr.Huỳnh" thuộc về tác giả. Điều khoản có
 thể được cập nhật; khi đó ứng dụng sẽ đề nghị bạn đồng ý lại.
 
 **Xem thêm** về quyền riêng tư, giấy phép thành phần bên thứ ba và báo lỗi phần mềm tại:

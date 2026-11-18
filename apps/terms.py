@@ -13,7 +13,7 @@ from pathlib import Path
 
 from fastapi import APIRouter
 
-TERMS_VERSION = "1.3"
+TERMS_VERSION = "1.4"
 
 VOICE_RIGHTS_STATEMENT = (
     "Tôi chỉ dùng giọng của mình hoặc giọng đã được chủ giọng cho phép nhân bản bằng AI "

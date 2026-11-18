@@ -57,3 +57,10 @@ Kokoro multilingual model (optional, downloaded on demand - not included in the 
     from hexgrad/kokoro 0.9.4 (Apache-2.0) into apps/_kokoro_torch/, which
     carries that project's LICENSE; modifications are noted at the top of
     each file.
+
+Thay doi bo sung cua ban Voice AI - Mr.Huynh (sau ban doi ten):
+    - He thong key kich hoat va goi trai nghiem (apps/license*.py).
+    - Thong bao popup do quan tri soan (apps/announcement.py), nut video huong dan.
+    - Mo hinh tai them: Kokoro, Supertonic 3, VoxCPM2 (OpenBMB, Apache-2.0),
+      VieNeu-TTS v3 Nano; danh sach giong gop cua moi mo hinh (apps/voice_catalog.py).
+    - Ban dong goi cho macOS (scripts/build_macos.sh) va tu cap nhat ban Windows.

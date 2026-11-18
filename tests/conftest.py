@@ -16,3 +16,10 @@ def _khong_ghi_mo_hinh_da_chon(tmp_path, monkeypatch):
     ws = sys.modules.get("apps.web_stream")
     if ws is not None:
         monkeypatch.setattr(ws, "_last_model_path", lambda: tmp_path / "last-model.json")
+
+
+@pytest.fixture(autouse=True)
+def _giay_phep_rieng_moi_test(tmp_path, monkeypatch):
+    """Mỗi test có thư mục giấy phép riêng (trial mới). Trước đây test dùng trial.dat thật của
+    máy chạy test: hết 3 ngày dùng thử là hàng chục test báo 402 dù code không đổi."""
+    monkeypatch.setenv("VOICEAI_LICENSE_DIR", str(tmp_path / "license"))
