@@ -186,16 +186,20 @@ export const AboutTab: React.FC<AboutTabProps> = ({
           <strong>VieNeu-TTS</strong> của tác giả{" "}
           <strong>Phạm Nguyễn Ngọc Bảo</strong> (giọng tiếng Việt). Giọng nước
           ngoài dùng <strong>Supertonic 3</strong> của{" "}
-          <strong>Supertone Inc.</strong> và <strong>Kokoro-82M</strong> của{" "}
-          <strong>hexgrad</strong>, tải riêng khi bạn chọn. Ứng dụng độc lập,
-          không phải sản phẩm chính thức của VieNeu-TTS, Supertone hay Kokoro.
+          <strong>Supertone Inc.</strong>, <strong>Kokoro-82M</strong> của{" "}
+          <strong>hexgrad</strong> và <strong>VoxCPM2</strong> của{" "}
+          <strong>OpenBMB</strong>; bản thử nghiệm{" "}
+          <strong>VieNeu-TTS v3 Nano</strong> cũng của tác giả VieNeu-TTS. Các
+          mô hình này tải riêng khi bạn chọn. Ứng dụng độc lập, không phải sản
+          phẩm chính thức của VieNeu-TTS, Supertone, Kokoro hay OpenBMB.
         </p>
 
         <p className="border-border/50 border-t pt-1 text-[12px] text-muted-foreground">
           Ứng dụng: mã nguồn mở, Apache 2.0 · VieNeu-TTS: Apache 2.0 ·
           Supertonic 3: OpenRAIL-M (cấm mạo danh, lừa đảo, đăng nội dung AI
           không ghi rõ) · Kokoro-82M: Apache 2.0 (bộ tách âm tải thêm có phần
-          GPL-3.0, không nằm trong bộ cài).
+          GPL-3.0, không nằm trong bộ cài) · VoxCPM2: Apache 2.0 (cấm mạo danh,
+          lừa đảo, thông tin sai lệch).
         </p>
       </div>
 
