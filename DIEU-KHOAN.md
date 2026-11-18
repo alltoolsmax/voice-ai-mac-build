@@ -91,7 +91,15 @@ bằng AI"**.
 - Các giới hạn trách nhiệm trên không loại trừ nghĩa vụ hoặc trách nhiệm bắt buộc
   theo pháp luật của tác giả ứng dụng hoặc của bất kỳ bên nào có liên quan.
 
-## 7. Điều khoản chung
+## 7. Key kích hoạt
+
+- Key kích hoạt chỉ dành cho **người mua** và số máy mà gói đã mua cho phép. **Không được
+  chia sẻ, cho mượn, đăng công khai, cho thuê hoặc bán lại key** cho người khác.
+- Không được cố ý vượt qua, giả mạo hay vô hiệu hoá cơ chế kiểm tra key và thời gian dùng thử.
+- Nếu phát hiện key bị chia sẻ hoặc bán lại trái phép, tác giả có quyền thu hồi hoặc khoá
+  key đó mà không hoàn tiền, trong phạm vi pháp luật cho phép.
+
+## 8. Điều khoản chung
 
 Bạn được sử dụng ứng dụng cho mục đích cá nhân và thương mại, trong thời hạn và phạm vi của
 gói key đã kích hoạt, và trong khuôn khổ các điều khoản này. Tên và biểu tượng "Voice AI - Mr.Huỳnh" thuộc về tác giả. Điều khoản có
