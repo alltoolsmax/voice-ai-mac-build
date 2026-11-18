@@ -178,6 +178,27 @@ export const AboutTab: React.FC<AboutTabProps> = ({
         </p>
       </div>
 
+      {/* 4. Nguồn gốc: ghi công tác giả gốc; không chèn liên kết. */}
+      <div className="space-y-3 rounded-xl border border-border/80 bg-card p-5 shadow-xs">
+        <p className="text-foreground/90 text-sm leading-relaxed">
+          <strong>Voice AI</strong> do <strong>Mr. Huỳnh</strong> phát triển dựa
+          vào mã nguồn <strong>CIT Voice Studio</strong> và{" "}
+          <strong>VieNeu-TTS</strong> của tác giả{" "}
+          <strong>Phạm Nguyễn Ngọc Bảo</strong> (giọng tiếng Việt). Giọng nước
+          ngoài dùng <strong>Supertonic 3</strong> của{" "}
+          <strong>Supertone Inc.</strong> và <strong>Kokoro-82M</strong> của{" "}
+          <strong>hexgrad</strong>, tải riêng khi bạn chọn. Ứng dụng độc lập,
+          không phải sản phẩm chính thức của VieNeu-TTS, Supertone hay Kokoro.
+        </p>
+
+        <p className="border-border/50 border-t pt-1 text-[12px] text-muted-foreground">
+          Ứng dụng: mã nguồn mở, Apache 2.0 · VieNeu-TTS: Apache 2.0 ·
+          Supertonic 3: OpenRAIL-M (cấm mạo danh, lừa đảo, đăng nội dung AI
+          không ghi rõ) · Kokoro-82M: Apache 2.0 (bộ tách âm tải thêm có phần
+          GPL-3.0, không nằm trong bộ cài).
+        </p>
+      </div>
+
       {/* 5. Footer */}
       <div className="pt-1 text-center">
         <a
