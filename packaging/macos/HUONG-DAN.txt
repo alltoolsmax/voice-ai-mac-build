@@ -13,14 +13,20 @@ MỞ
     Launchpad, hoặc Finder -> Applications -> Voice AI MrHuynh.
     Lần đầu mở mất thêm vài giây để chuẩn bị mô hình.
 
-LẦN ĐẦU MỞ BỊ CHẶN ("không xác minh được nhà phát triển")
-    App chưa được Apple chứng thực nên macOS chặn lần đầu. Mở khoá một lần:
-      1. Bấm "Done" / "OK" để đóng thông báo.
-      2. Vào System Settings (Cài đặt hệ thống) -> Privacy & Security
-         (Quyền riêng tư & Bảo mật), kéo xuống cuối.
-      3. Bấm "Open Anyway" (Vẫn mở) cạnh dòng Voice AI MrHuynh, nhập mật khẩu máy.
-    Hoặc chạy trong Terminal:
-        xattr -dr com.apple.quarantine "/Applications/Voice AI MrHuynh.app"
+LẦN ĐẦU MỞ BỊ CHẶN HOẶC KHÔNG HIỆN CỬA SỔ
+    App chưa được Apple chứng thực nên macOS có thể chặn hoặc để app "treo" ở lần mở đầu
+    (biểu tượng nảy trên Dock nhưng không hiện cửa sổ, hoặc báo "không xác minh được
+    nhà phát triển"). Làm một lần duy nhất sau khi kéo app vào Applications:
+      1. Nếu app đang kẹt: Cmd+Option+Esc -> chọn Voice AI MrHuynh -> Force Quit.
+      2. Mở Terminal (Cmd+Space, gõ Terminal, Enter), dán dòng sau rồi Enter
+         (chạy xong không in gì là bình thường):
+            xattr -cr "/Applications/Voice AI MrHuynh.app"
+      3. Mở lại app từ Applications, chờ khoảng 30 giây ở lần đầu.
+    Mỗi lần cập nhật kéo bản mới đè vào Applications, làm lại bước 2.
+    Cách khác (không cần Terminal, nếu macOS có hiện thông báo chặn):
+      Bấm "Done" / "OK" -> System Settings (Cài đặt hệ thống) -> Privacy & Security
+      (Quyền riêng tư & Bảo mật), kéo xuống cuối -> bấm "Open Anyway" (Vẫn mở)
+      cạnh dòng Voice AI MrHuynh, nhập mật khẩu máy.
 
 TẮT
     Đóng cửa sổ app, hoặc bấm Cmd+Q.
