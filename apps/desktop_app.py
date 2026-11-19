@@ -13,6 +13,30 @@ import time
 import threading
 from pathlib import Path
 
+# macOS: vết khởi động ghi SỚM NHẤT (trước mọi import nặng) vào ~/VoiceAIMrHuynh/startup-trace.log.
+# Nếu app treo trước khi hiện cửa sổ, faulthandler tự chụp vị trí dòng code đang đứng mỗi 30 giây.
+_TRACE_FILE = None
+if sys.platform == "darwin" and getattr(sys, "frozen", False):
+    try:
+        import faulthandler
+
+        _td = Path.home() / "VoiceAIMrHuynh"
+        _td.mkdir(parents=True, exist_ok=True)
+        _TRACE_FILE = open(_td / "startup-trace.log", "w", encoding="utf-8", buffering=1)
+        _TRACE_FILE.write(f"{time.strftime('%H:%M:%S')} bat dau, python {sys.version.split()[0]}\n")
+        faulthandler.dump_traceback_later(30, repeat=True, file=_TRACE_FILE)
+    except Exception:
+        _TRACE_FILE = None
+
+
+def _trace(msg: str) -> None:
+    if _TRACE_FILE is not None:
+        try:
+            _TRACE_FILE.write(f"{time.strftime('%H:%M:%S')} {msg}\n")
+        except Exception:
+            pass
+
+
 # Màn hình khởi động trong suốt (Windows): bật SỚM NHẤT có thể, trước các import nặng bên dưới.
 # Tắt bằng biến môi trường VOICEAI_NO_SPLASH=1. Lỗi gì thì bỏ qua, app vẫn chạy bình thường.
 _NATIVE_SPLASH = None
@@ -25,8 +49,10 @@ if __name__ == "__main__" and sys.platform == "win32" and not os.environ.get("VO
     except Exception:
         _NATIVE_SPLASH = None
 
+_trace('import uvicorn')
 import urllib.request
 import uvicorn
+_trace('import webview')
 
 # PyWebView trên Windows chạy qua pythonnet + .NET Framework. Nếu máy người dùng thiếu
 # .NET Framework 4.7.2+ (hoặc bản đóng gói thiếu file runtime), import này sẽ hỏng.
@@ -94,6 +120,7 @@ def _log_path() -> "Path":
         return d / "voice-ai-mrhuynh.log"
 
 
+_trace('chuan bi log')
 LOG_FILE = _log_path()
 try:  # mỗi lần chạy bắt đầu một file mới, khỏi phình vô hạn
     LOG_FILE.write_text("", encoding="utf-8")
@@ -823,6 +850,10 @@ def main():
     #    pythonnet - lỗi ở đây không được làm chết ứng dụng.
     try:
         log("[Desktop App] Mở cửa sổ Voice AI - Mr.Huỳnh...")
+        _trace("mo cua so")
+        if _TRACE_FILE is not None:
+            import faulthandler as _fh
+            _fh.cancel_dump_traceback_later()
         desktop_api = DesktopApi()
         # Kep cua so vao vung lam viec that. Doc duoc thi tu tinh, khong doc duoc thi
         # de pywebview tu xu (CenterScreen) - van chay, chi la co the hoi lech.
