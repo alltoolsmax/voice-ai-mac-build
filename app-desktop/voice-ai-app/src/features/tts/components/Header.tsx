@@ -1,4 +1,4 @@
-import { Moon, PlayCircle, RefreshCw, Sun } from "lucide-react";
+import { Moon, PlayCircle, RefreshCw, Sparkles, Sun } from "lucide-react";
 import type React from "react";
 import { useEffect, useState } from "react";
 import logo from "../../../assets/logo.png";
@@ -69,6 +69,21 @@ const VideoGuideButton: React.FC<{ apiUrl: string }> = ({ apiUrl }) => {
   );
 };
 
+/** Nút dẫn tới trang công cụ tạo video AI (link cố định). */
+const AiVideoButton: React.FC = () => (
+  <a
+    className="studio-ai-video"
+    href="https://mrhuynh.net/tools/"
+    rel="noopener noreferrer"
+    target="_blank"
+    title="Tạo video AI miễn phí (mở tab mới)"
+  >
+    <Sparkles aria-hidden="true" size={16} />
+    <span>Tạo Video AI</span>
+    <b>MIỄN PHÍ</b>
+  </a>
+);
+
 export const Header: React.FC<HeaderProps> = ({
   apiUrl,
   engineName,
@@ -99,7 +114,10 @@ export const Header: React.FC<HeaderProps> = ({
         0979.007.367
       </a>
     </div>
-    <VideoGuideButton apiUrl={apiUrl} />
+    <div className="flex items-center gap-2.5">
+      <VideoGuideButton apiUrl={apiUrl} />
+      <AiVideoButton />
+    </div>
     <div className="flex min-w-0 items-center gap-2">
       <button
         className="studio-model"

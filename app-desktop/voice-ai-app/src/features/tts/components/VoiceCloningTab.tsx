@@ -44,6 +44,9 @@ interface VoiceCloningTabProps {
 const SOURCE_EXTENSIONS = [".mp3", ".wav", ".m4a"];
 const SOURCE_ACCEPT = `${SOURCE_EXTENSIONS.join(",")},audio/mpeg,audio/wav,audio/mp4`;
 const SOURCE_FORMATS = "MP3, WAV hoặc M4A";
+// Câu cố định khi thu micro: cũng là lời của đoạn mẫu, nên không cần người dùng gõ lại.
+const RECORDING_SAMPLE_TEXT =
+  "Đây là giọng nói của tôi. Tôi đồng ý tạo giọng đọc AI để kể những câu chuyện thật ý nghĩa!";
 export const VoiceCloningTab: React.FC<VoiceCloningTabProps> = ({
   apiUrl,
   isActive,
@@ -58,6 +61,7 @@ export const VoiceCloningTab: React.FC<VoiceCloningTabProps> = ({
   );
   const [isPreparing, setIsPreparing] = useState(false);
   const [sourceFileName, setSourceFileName] = useState("");
+  const [sampleText, setSampleText] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [consent, setConsent] = useState<ConsentInfo | null>(null);
   const [consentError, setConsentError] = useState<string | null>(null);
@@ -252,6 +256,8 @@ export const VoiceCloningTab: React.FC<VoiceCloningTabProps> = ({
         inputSource,
         rightsConfirmed: agreed,
         rightsVersion: consent.terms_version,
+        promptText:
+          inputSource === "recording" ? RECORDING_SAMPLE_TEXT : sampleText,
       });
       await onAddCustomVoice(saved.voice_id);
       setSavedVoice(saved.voice_id);
@@ -461,12 +467,37 @@ export const VoiceCloningTab: React.FC<VoiceCloningTabProps> = ({
                 <p className="text-[12px] text-muted-foreground">
                   Một người nói rõ, không nhạc nền; giữ tối đa 15 giây.
                 </p>
+                <div className="space-y-1">
+                  <label
+                    className="font-semibold text-foreground text-xs"
+                    htmlFor="clone-sample-text"
+                  >
+                    Lời của đoạn mẫu{" "}
+                    <span className="font-normal text-muted-foreground">
+                      (nên gõ đúng để giống hơn)
+                    </span>
+                  </label>
+                  <textarea
+                    className="w-full resize-none rounded-lg border border-border/80 bg-background px-2.5 py-1.5 text-xs outline-none focus:border-brand-500"
+                    disabled={isSaving}
+                    id="clone-sample-text"
+                    maxLength={300}
+                    onChange={(e) => setSampleText(e.target.value)}
+                    placeholder="Gõ đúng từng chữ trong đoạn mẫu, ví dụ: Xin chào, tôi là Huỳnh, hôm nay trời đẹp quá."
+                    rows={2}
+                    value={sampleText}
+                  />
+                  <p className="text-[12px] text-muted-foreground">
+                    Có lời mẫu, giọng nhân bản bắt chước cả cách nói, nhịp và
+                    sắc thái. Để trống vẫn được nhưng kém giống hơn. Chỉ áp dụng
+                    với VoxCPM2.
+                  </p>
+                </div>
               </div>
             ) : (
               <>
                 <p className="clone-sample select-text rounded-lg border border-border/60 bg-secondary/30 px-3 py-2 font-semibold text-foreground text-sm leading-relaxed">
-                  “Đây là giọng nói của tôi. Tôi đồng ý tạo giọng đọc AI để kể
-                  những câu chuyện thật ý nghĩa!”
+                  “{RECORDING_SAMPLE_TEXT}”
                 </p>
                 <p className="text-[12px] text-muted-foreground">
                   Đọc tự nhiên 3–8 giây ở nơi yên tĩnh.

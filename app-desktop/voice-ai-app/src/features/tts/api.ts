@@ -397,6 +397,7 @@ export async function addCustomVoice(
     inputSource: "recording" | "file";
     rightsConfirmed: boolean;
     rightsVersion: string;
+    promptText?: string;
   }
 ): Promise<{ voice_id: string }> {
   const cleanUrl = clean(apiUrl);
@@ -407,6 +408,9 @@ export async function addCustomVoice(
   formData.append("input_source", params.inputSource);
   formData.append("rights_confirmed", String(params.rightsConfirmed));
   formData.append("rights_version", params.rightsVersion);
+  if (params.promptText?.trim()) {
+    formData.append("prompt_text", params.promptText.trim());
+  }
 
   const response = await fetch(`${cleanUrl}/api/voices/custom`, {
     method: "POST",

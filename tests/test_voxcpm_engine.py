@@ -114,3 +114,29 @@ def test_api_thiet_ke_giong(tmp_path, monkeypatch):
     assert c.post("/api/voices/design", json={"name": "Cô Lan", "description": "x"}).status_code == 409
     assert c.post("/api/voices/design", json={"name": "Mới", "description": "  "}).status_code == 400
     assert any(v["id"] == "Cô Lan" for v in c.get("/voices").json())
+
+
+def test_clone_co_loi_mau_dung_ultimate_cloning(tmp_path):
+    ref = tmp_path / "mau.wav"
+    ref.write_bytes(b"RIFFxxxx")
+    eng, m = make(tmp_path)
+    eng.add_voice("Có lời", str(ref), save=True, prompt_text="  Xin chào,\n tôi là   Huỳnh.  ")
+    eng.add_voice("Không lời", str(ref), save=True)
+    eng.infer("Chào.", voice="Có lời")
+    _, kw = m.calls[-1]
+    assert kw["reference_wav_path"] == kw["prompt_wav_path"]
+    assert kw["prompt_text"] == "Xin chào, tôi là Huỳnh."
+    eng.infer("Chào.", voice="Không lời")
+    _, kw = m.calls[-1]
+    assert "prompt_wav_path" not in kw and "prompt_text" not in kw   # như trước: chỉ tông giọng
+    # lời mẫu được lưu cùng giọng và nạp lại sau khi mở app
+    eng2, m2 = make(tmp_path)
+    eng2.infer("Chào.", voice="Có lời")
+    assert m2.calls[-1][1]["prompt_text"] == "Xin chào, tôi là Huỳnh."
+    # giọng nhân bản cũ (json chưa có trường prompt_text) vẫn đọc được
+    assert eng2._preset_voices["Không lời"]["prompt_text"] == ""
+
+
+def test_loi_mau_qua_dai_bi_cat():
+    assert len(ve.clean_prompt_text("a " * 400)) <= ve.MAX_PROMPT_TEXT_CHARS
+    assert ve.clean_prompt_text(None) == ""

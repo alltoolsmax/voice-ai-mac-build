@@ -11,6 +11,9 @@ Hai cách chọn giọng:
     Danh sách PRESETS bên dưới là các mô tả do chính app đặt; người dùng có thể gõ mô tả riêng
     bằng voice_id dạng ``thiết kế: <mô tả>``.
   * Giọng nhân bản: một đoạn tiếng mẫu 3-15 giây, truyền qua ``reference_wav_path``.
+    Có kèm lời của đoạn mẫu (``prompt_text``) thì dùng chế độ Ultimate Cloning của VoxCPM2:
+    đoạn mẫu + lời mẫu cùng đi vào mô hình (``prompt_wav_path``), giống nhất, giữ cả cách
+    nói và nhịp. Không có lời mẫu thì chỉ nhân bản tông giọng như trước.
 """
 
 from __future__ import annotations
@@ -30,6 +33,12 @@ MAX_CHUNK_CHARS = 280
 CHUNK_SILENCE_S = 0.12
 DESIGN_PREFIX = "thiết kế:"
 MAX_DESIGN_CHARS = 200
+MAX_PROMPT_TEXT_CHARS = 300
+
+
+def clean_prompt_text(text) -> str:
+    """Lời của đoạn mẫu: bỏ xuống dòng/khoảng trắng thừa, giới hạn độ dài (đoạn mẫu <= 15 giây)."""
+    return re.sub(r"\s+", " ", str(text or "")).strip()[:MAX_PROMPT_TEXT_CHARS]
 
 # (id hiển thị, giới tính, mô tả tiếng Việt cho thẻ giọng, mô tả đưa cho mô hình)
 PRESETS: List[tuple] = [
@@ -104,6 +113,7 @@ class VoxCPM2TTS:
     device = "cuda"
     sample_rate = SAMPLE_RATE
     languages: Dict[str, str] = {}   # tự nhận ngôn ngữ từ chữ, không có ô chọn
+    supports_prompt_text = True      # nhận lời của đoạn mẫu khi nhân bản (Ultimate Cloning)
 
     def __init__(self, model_dir=None, custom_path=None, model=None):
         if model is None:
@@ -143,6 +153,7 @@ class VoxCPM2TTS:
                 self._preset_voices[name] = {
                     "gender": "neutral", "description": "Giọng nhân bản", "is_custom": True,
                     "ref": str(wav), "authorization": item.get("authorization"),
+                    "prompt_text": clean_prompt_text(item.get("prompt_text")),
                 }
         for name, prompt in (data.get("designs") or {}).items():
             if name not in self._preset_voices and _clean_design(str(prompt)):
@@ -155,7 +166,8 @@ class VoxCPM2TTS:
         if not self._custom_path:
             return
         voices = {
-            n: {"wav": Path(p["ref"]).name, "authorization": p.get("authorization")}
+            n: {"wav": Path(p["ref"]).name, "authorization": p.get("authorization"),
+                "prompt_text": p.get("prompt_text") or ""}
             for n, p in self._preset_voices.items() if p.get("is_custom") and p.get("ref")
         }
         designs = {n: p["prompt"] for n, p in self._preset_voices.items()
@@ -167,7 +179,7 @@ class VoxCPM2TTS:
         tmp.replace(self._custom_path)
 
     def add_voice(self, name, ref_audio_path, denoise=False, save=True, save_path=None,
-                  authorization=None, **_):
+                  authorization=None, prompt_text="", **_):
         if save_path:
             self._custom_path = Path(save_path)
         if not self._custom_path:
@@ -178,6 +190,7 @@ class VoxCPM2TTS:
         self._preset_voices[name] = {
             "gender": "neutral", "description": "Giọng nhân bản", "is_custom": True,
             "ref": str(dest), "authorization": authorization,
+            "prompt_text": clean_prompt_text(prompt_text),
         }
         if save:
             self._save_custom()
@@ -231,6 +244,9 @@ class VoxCPM2TTS:
             item = self._preset_voices[voice]
             if item.get("ref"):
                 kwargs["reference_wav_path"] = item["ref"]
+                if item.get("prompt_text"):   # Ultimate Cloning: đoạn mẫu + đúng lời của nó
+                    kwargs["prompt_wav_path"] = item["ref"]
+                    kwargs["prompt_text"] = item["prompt_text"]
             else:
                 text = f"({item['prompt']}){text}"
         wav = self._model.generate(text=text, **kwargs)

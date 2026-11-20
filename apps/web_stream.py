@@ -1660,6 +1660,7 @@ async def add_custom_voice(
     input_source: Literal["recording", "file"] = Form("recording"),
     rights_confirmed: bool = Form(False),
     rights_version: str = Form(""),
+    prompt_text: str = Form(""),
 ):
     """Nhân giọng từ âm thanh mẫu và lưu lại vĩnh viễn dưới `name` để chọn dùng sau này."""
     require_model()
@@ -1700,9 +1701,13 @@ async def add_custom_voice(
         with model_lock:
             if ten in getattr(vieneu, "_preset_voices", {}):
                 raise HTTPException(status_code=409, detail="Tên giọng đã tồn tại. Vui lòng chọn tên khác.")
+            extra = {}
+            # Lời của đoạn mẫu chỉ VoxCPM2 dùng (Ultimate Cloning); mô hình khác bỏ qua.
+            if getattr(vieneu, "supports_prompt_text", False) and prompt_text.strip():
+                extra["prompt_text"] = prompt_text
             voice_id = vieneu.add_voice(
                 ten, tmp_ref_path, denoise=denoise, save=True, save_path=_custom_voices_path(),
-                authorization=authorization,
+                authorization=authorization, **extra,
             )
     except HTTPException:
         raise

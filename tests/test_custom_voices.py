@@ -68,6 +68,39 @@ class CustomVoiceTests(unittest.TestCase):
             files={"ref_audio": ("reference.wav", self.audio, "audio/wav")},
         )
 
+    def test_loi_mau_bi_bo_qua_voi_vieneu(self):
+        """VieNeu không nhận lời mẫu: gửi kèm vẫn lưu giọng bình thường, không lỗi."""
+        response = self.client.post(
+            "/api/voices/custom",
+            data={"name": "Giọng X", "denoise": "false", "input_source": "file",
+                  "rights_confirmed": "true", "rights_version": terms.TERMS_VERSION,
+                  "prompt_text": "Xin chào các bạn."},
+            files={"ref_audio": ("reference.wav", self.audio, "audio/wav")},
+        )
+        self.assertEqual(response.status_code, 200, response.text)
+
+    def test_loi_mau_den_voxcpm2(self):
+        from apps import voxcpm_engine as ve
+
+        class Fake:
+            class tts_model:
+                sample_rate = 48000
+
+            def generate(self, text, **kw):
+                return np.zeros(480, dtype=np.float32)
+
+        engine = ve.VoxCPM2TTS(model=Fake(), custom_path=self.path.with_name("vox.json"))
+        with patch.object(ws, "vieneu", engine):
+            response = self.client.post(
+                "/api/voices/custom",
+                data={"name": "Giọng V", "denoise": "false", "input_source": "file",
+                      "rights_confirmed": "true", "rights_version": terms.TERMS_VERSION,
+                      "prompt_text": "  Xin chào   các bạn. "},
+                files={"ref_audio": ("reference.wav", self.audio, "audio/wav")},
+            )
+        self.assertEqual(response.status_code, 200, response.text)
+        self.assertEqual(engine._preset_voices["Giọng V"]["prompt_text"], "Xin chào các bạn.")
+
     def assert_can_generate(self, tts, voice_id):
         response = self.client.post("/api/tts/generate", json={
             "text": "Xin chào.", "voice_id": voice_id,
