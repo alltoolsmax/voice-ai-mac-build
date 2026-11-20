@@ -1,6 +1,8 @@
 name: Build macOS
 on:
   workflow_dispatch:
+permissions:
+  contents: write
 jobs:
   dmg:
     strategy:
@@ -23,7 +25,15 @@ jobs:
         run: |
           chmod +x scripts/build_macos.sh
           ./scripts/build_macos.sh
+      - name: Dua .dmg len Releases (khong tinh vao quota artifact)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="mac-${{ github.run_id }}"
+          gh release view "$TAG" >/dev/null 2>&1 || gh release create "$TAG" --title "Mac build $TAG" --notes "Ban build macOS"
+          gh release upload "$TAG" dist/*.dmg --clobber
       - uses: actions/upload-artifact@v4
+        continue-on-error: true
         with:
           name: voice-ai-macos-${{ matrix.label }}
           path: dist/*.dmg
