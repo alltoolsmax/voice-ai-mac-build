@@ -7,7 +7,9 @@ Windows (BUILD-EXE.bat tự gọi sau khi có bộ cài Setup):
       voice_ai_mrhuynh_win.zip   cho khách tải (bên trong 1 tệp .exe)
       voice_win.json             phiên bản + SHA-256 (trang quản trị đọc khi bấm Phát hành)
 
-macOS: KHÔNG cần (phần mềm trên Mac tự cập nhật thẳng từ GitHub Releases). Nếu muốn đặt bộ cài Mac lên trang tải:
+macOS (GitHub Actions tự gọi, không cần làm gì): tạo voice_ai_mrhuynh_mac.zip (2 bộ cài chip Apple M + Intel) đưa lên
+GitHub Releases với TÊN CỐ ĐỊNH – link khách tải lần đầu không đổi:
+    https://github.com/alltoolsmax/voice-ai-mac-build/releases/latest/download/voice_ai_mrhuynh_mac.zip
     python scripts/make_downloads.py --mac apple=<arm64.dmg> intel=<x86_64.dmg>
   → dist/downloads-voice-mac-upload.zip gồm:
       voice_ai_mrhuynh_mac_apple.dmg / voice_ai_mrhuynh_mac_intel.dmg   (cập nhật: phần mềm mở đúng file theo chip)
@@ -34,7 +36,7 @@ WIN_JSON = "voice_win.json"
 MAC_DMG = {"apple": "voice_ai_mrhuynh_mac_apple.dmg", "intel": "voice_ai_mrhuynh_mac_intel.dmg"}
 MAC_ZIP = "voice_ai_mrhuynh_mac.zip"
 MAC_JSON = "voice_mac.json"
-MAC_NAME_IN_ZIP = {"apple": "Voice AI - Mr Huynh (chip Apple M).dmg", "intel": "Voice AI - Mr Huynh (chip Intel).dmg"}
+MAC_NAME_IN_ZIP = {"apple": "voice_ai_mrhuynh_mac_apple.dmg", "intel": "voice_ai_mrhuynh_mac_intel.dmg"}
 
 
 def app_version() -> str:

@@ -1,0 +1,107 @@
+name: Build Windows + macOS
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: build-mac-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  dmg:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: macos-15, label: apple }
+          - { os: macos-15-intel, label: intel }
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: app-desktop/voice-ai-app/package-lock.json
+      - name: Build .dmg
+        run: |
+          chmod +x scripts/build_macos.sh
+          ./scripts/build_macos.sh
+      - name: Phien ban
+        id: ver
+        run: echo "ver=$(sed -n 's/^#define AppVersion *"\(.*\)".*/\1/p' scripts/installer.iss)" >> "$GITHUB_OUTPUT"
+      - name: Dua .dmg len Releases (ban nhap - chi cong bo khi du 2 chip + zip)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="v${{ steps.ver.outputs.ver }}"
+          mkdir -p out
+          cp dist/*.dmg "out/Voice-AI-MrHuynh-v${{ steps.ver.outputs.ver }}-mac-${{ matrix.label }}.dmg"
+          gh release view "$TAG" >/dev/null 2>&1 || \
+            gh release create "$TAG" --draft --title "Voice AI - Mr Huynh $TAG (macOS)" \
+              --notes "Ban macOS. Khach cai lan dau: voice_ai_mrhuynh_mac.zip (ben trong 2 bo cai: chip Apple M + Intel). Phan mem Voice AI tren Mac tu cap nhat tu day." \
+              --target "${{ github.sha }}" || sleep 10
+          gh release upload "$TAG" out/* --clobber
+
+
+  win:
+    runs-on: windows-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: app-desktop/voice-ai-app/package-lock.json
+      - name: Inno Setup
+        shell: pwsh
+        run: |
+          if (-not (Test-Path "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe")) { choco install innosetup -y --no-progress }
+      - name: Build .exe + bo cai Setup
+        shell: cmd
+        run: |
+          uv sync --frozen --group desktop || exit /b 1
+          if not exist "models\hf_cache" ".venv\Scripts\python.exe" scripts\fetch_models.py
+          call scripts\build_desktop_exe.bat --no-pause || exit /b 1
+          call scripts\make_installer.bat --no-pause || exit /b 1
+          ".venv\Scripts\python.exe" scripts\make_downloads.py || exit /b 1
+          type dist\downloads-voice\voice_win.json
+      - name: Phien ban
+        id: ver
+        shell: bash
+        run: echo "ver=$(sed -n 's/^#define AppVersion *"\(.*\)".*/\1/p' scripts/installer.iss)" >> "$GITHUB_OUTPUT"
+      - name: Dua len Releases (ban nhap)
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="v${{ steps.ver.outputs.ver }}"
+          gh release view "$TAG" >/dev/null 2>&1 || \
+            gh release create "$TAG" --draft --title "Voice AI - Mr Huynh $TAG" \
+              --notes "Windows: voice_ai_mrhuynh_win.zip (khach cai lan dau). macOS: voice_ai_mrhuynh_mac.zip (2 bo cai chip Apple M + Intel)." \
+              --target "${{ github.sha }}" || sleep 10
+          gh release upload "$TAG" dist/downloads-voice/voice_ai_mrhuynh_win.exe dist/downloads-voice/voice_ai_mrhuynh_win.zip dist/downloads-voice/voice_win.json --clobber
+
+  # zip TEN CO DINH cho link khong doi: .../releases/latest/download/voice_ai_mrhuynh_mac.zip. Xong moi cong bo (latest).
+  package:
+    needs: [dmg, win]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Tao zip ten co dinh va cong bo ban moi
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VER=$(sed -n 's/^#define AppVersion *"\(.*\)".*/\1/p' scripts/installer.iss)
+          TAG="v$VER"
+          mkdir -p in
+          gh release download "$TAG" -D in -p "*-mac-apple.dmg" -p "*-mac-intel.dmg" --clobber
+          python3 scripts/make_downloads.py --mac "apple=in/Voice-AI-MrHuynh-v$VER-mac-apple.dmg" "intel=in/Voice-AI-MrHuynh-v$VER-mac-intel.dmg"
+          gh release upload "$TAG" dist/downloads-voice-mac/voice_ai_mrhuynh_mac.zip dist/downloads-voice-mac/voice_mac.json --clobber
+          gh release delete-asset "$TAG" downloads-voice-mac-upload.zip -y 2>/dev/null || true
+          gh release edit "$TAG" --draft=false --latest

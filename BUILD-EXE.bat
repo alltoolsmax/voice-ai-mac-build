@@ -81,7 +81,7 @@ echo  XONG. File chay truc tiep:
 echo    dist\Voice-AI-MrHuynh\Voice-AI-MrHuynh.exe
 echo  Muon gui cho nguoi khac: nen ca thu muc dist\Voice-AI-MrHuynh thanh .zip
 if defined HAS_ISCC echo  File cai dat 1 file: dist\Voice-AI-MrHuynh-v*-win-x86_64.exe
-if exist "dist\downloads-voice-upload.zip" echo  TAI LEN HOSTING: dist\downloads-voice-upload.zip  ^(Upload vao mrhuynh.net/downloads/ roi Extract, sau do Trang quan tri ^> Voice AI ^> Phat hanh^)
+echo  Ban phat hanh cho khach: GitHub tu build ^(voice-ai-mac-build ^> Releases^), bam Phat hanh o Trang quan tri ^> Voice AI.
 echo ================================================================
 explorer "dist\Voice-AI-MrHuynh"
 pause
