@@ -576,6 +576,11 @@ model_status: Dict[str, str] = {"state": "loading", "message": "Đang khởi đ�
 if os.getenv("VOICEAI_SKIP_MODEL_AUTOLOAD") != "1":
     threading.Thread(target=_startup_load, name="model-loader", daemon=True).start()
 
+# Báo máy chủ "phần mềm đang mở" (mã máy đã băm, phiên bản, trạng thái bản quyền) để trang quản trị
+# đếm số máy đã cài / đang hoạt động. Theo công tắc "Kiểm tra bản mới"; xem apps/usage_ping.py.
+from apps import usage_ping  # noqa: E402
+usage_ping.start()
+
 
 def _pcm16(audio_f32: np.ndarray) -> bytes:
     """Chuyển đổi mảng numpy float32 sang PCM16 bytes."""

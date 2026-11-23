@@ -23,7 +23,8 @@ trong các trường hợp sau, và chỉ tải xuống, không gửi nội dung
 
 | Trường hợp | Kết nối tới | Mặc định |
 |---|---|---|
-| Kiểm tra bản mới (bạn bật trong Cài đặt, hoặc bấm "Kiểm tra cập nhật") | GitHub, tối đa một lần mỗi ngày | **Tắt** |
+| Kiểm tra bản mới (công tắc trong Cài đặt, hoặc bấm "Kiểm tra cập nhật") | active.mrhuynh.net, tối đa một lần mỗi 5 phút khi mở ứng dụng | Bật |
+| Báo số máy đang dùng (đi cùng công tắc "Kiểm tra bản mới"): gửi mã máy MH-… (đã băm, không chứa thông tin cá nhân), phiên bản, hệ điều hành, trạng thái bản quyền | active.mrhuynh.net, lúc mở ứng dụng và mỗi 30 phút | Bật |
 | Bạn bấm Tải về một mô hình không kèm sẵn | Hugging Face | Chỉ khi bạn bấm |
 | Bạn bấm Tải về mô hình Kokoro hoặc thêm tiếng Nhật/Trung (cài bộ tách âm) | PyPI, GitHub / releases.astral.sh | Chỉ khi bạn bấm |
 | Bạn bấm "Cài hỗ trợ GPU" | PyPI, download.pytorch.org, GitHub / releases.astral.sh | Chỉ khi bạn bấm |

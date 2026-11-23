@@ -7,6 +7,7 @@ import pytest
 # đè `vieneu` mà các test đã mock (test hỏng chập chờn) và có thể tải ~300 MB.
 # Phải đặt TRƯỚC khi bất kỳ test nào import web_stream.
 os.environ.setdefault("VOICEAI_SKIP_MODEL_AUTOLOAD", "1")
+os.environ.setdefault("VOICEAI_NO_USAGE_PING", "1")      # không gửi số liệu thật khi chạy test
 
 
 @pytest.fixture(autouse=True)
