@@ -33,7 +33,7 @@ jobs:
       - name: Phien ban
         id: ver
         run: echo "ver=$(sed -n 's/^#define AppVersion *"\(.*\)".*/\1/p' scripts/installer.iss)" >> "$GITHUB_OUTPUT"
-      - name: Dua .dmg len Releases (tag v<phien ban>)
+      - name: Dua .dmg len Releases (tag v<phien ban>) - may Mac cua khach tu cap nhat tu day
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -42,23 +42,7 @@ jobs:
           cp dist/*.dmg "out/Voice-AI-MrHuynh-v${{ steps.ver.outputs.ver }}-mac-${{ matrix.label }}.dmg"
           gh release view "$TAG" >/dev/null 2>&1 || \
             gh release create "$TAG" --title "Voice AI - Mr Huynh $TAG (macOS)" \
-              --notes "downloads-voice-mac-upload.zip: goi tai len mrhuynh.net/downloads (Upload > Extract) roi Trang quan tri > Voice AI > Phat hanh > macOS. *-mac-apple.dmg cho chip Apple M, *-mac-intel.dmg cho Mac Intel." \
+              --notes "Ban macOS. Phan mem Voice AI tren Mac tu cap nhat tu day (khong qua hosting). *-mac-apple.dmg cho chip Apple M, *-mac-intel.dmg cho Mac Intel." --latest \
               --target "${{ github.sha }}" || sleep 10
           gh release upload "$TAG" out/* --clobber
 
-  package:
-    needs: dmg
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Tao downloads-voice-mac-upload.zip
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          VER=$(sed -n 's/^#define AppVersion *"\(.*\)".*/\1/p' scripts/installer.iss)
-          TAG="v$VER"
-          mkdir -p in
-          gh release download "$TAG" -D in -p "*-mac-apple.dmg" -p "*-mac-intel.dmg" --clobber
-          python3 scripts/make_downloads.py --mac "apple=in/Voice-AI-MrHuynh-v$VER-mac-apple.dmg" "intel=in/Voice-AI-MrHuynh-v$VER-mac-intel.dmg"
-          cat dist/downloads-voice-mac/voice_mac.json
-          gh release upload "$TAG" dist/downloads-voice-mac-upload.zip --clobber

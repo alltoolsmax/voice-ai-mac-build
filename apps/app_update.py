@@ -97,6 +97,31 @@ def highlights(body: str) -> list[str]:
     return out
 
 
+MAC_RELEASES_API = os.environ.get("VOICEAI_MAC_RELEASES",
+                                  "https://api.github.com/repos/alltoolsmax/voice-ai-mac-build/releases/latest")
+
+
+def _fetch_mac_github() -> dict:
+    """Bản Mac mới nhất trên GitHub Releases (tag vX.Y.Z), link .dmg theo chip máy đang chạy.
+    Chip này chưa có file (đang build dở) thì coi như chưa có bản mới."""
+    request = urllib.request.Request(MAC_RELEASES_API, headers={
+        "Accept": "application/vnd.github+json", "User-Agent": f"Voice-AI-MrHuynh/{APP_VERSION}"})
+    with urllib.request.urlopen(request, timeout=TIMEOUT_SECONDS,
+                                context=https_context() if MAC_RELEASES_API.startswith("https") else None) as response:
+        rel = json.loads(response.read().decode("utf-8"))
+    chip = "apple" if platform.machine().lower() in ("arm64", "aarch64") else "intel"
+    version = str(rel.get("tag_name") or "").lstrip("vV")
+    url = ""
+    for a in rel.get("assets") or []:
+        name = str(a.get("name") or "")
+        if name.endswith(f"-mac-{chip}.dmg"):
+            url = str(a.get("browser_download_url") or "")
+    if not version or not parse_version(version) or not url.startswith("https://"):
+        version, url = "", RELEASES_PAGE
+    return {"version": version, "url": url, "sha256": "", "signature": "", "published_at": rel.get("published_at"),
+            "highlights": highlights(str(rel.get("body") or ""))}
+
+
 def fetch_latest() -> dict:
     """{"version", "url", "published_at", "highlights"} của bản mới nhất theo máy chủ phát hành."""
     if not UPDATE_URL:
@@ -111,17 +136,9 @@ def fetch_latest() -> dict:
     url = str(body.get("url") or "")
     version = str(body.get("version") or "")
     if sys.platform == "darwin":
-        # macOS: bản Windows (.zip/.exe) vô dụng. Bản Mac phát hành riêng (trang quản trị › Voice AI ›
-        # Phát hành › macOS): version_mac + link .dmg đúng chip (url_mac_apple / url_mac_intel).
-        # Máy chủ cũ chỉ có url_mac (+ version chung). Mở link để tải thủ công, không tự cài đè.
-        chip = "apple" if platform.machine().lower() in ("arm64", "aarch64") else "intel"
-        if body.get("version_mac"):
-            version = str(body.get("version_mac") or "")
-            url = str(body.get(f"url_mac_{chip}") or body.get("url_mac") or "")
-        else:
-            url = str(body.get("url_mac") or "")
-        if not url.startswith("https://"):
-            version = ""
+        # macOS: bản Mac cập nhật THẲNG từ GitHub Releases (GitHub build xong là có, không qua hosting):
+        # bản mới nhất + file .dmg đúng chip (…-mac-apple.dmg / …-mac-intel.dmg). Mở link để tải, không tự cài đè.
+        return _fetch_mac_github()
     # Chỉ mở liên kết https; link lạ thì dùng trang liên hệ mặc định.
     if not url.startswith("https://"):
         url = RELEASES_PAGE

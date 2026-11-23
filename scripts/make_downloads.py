@@ -7,7 +7,7 @@ Windows (BUILD-EXE.bat tự gọi sau khi có bộ cài Setup):
       voice_ai_mrhuynh_win.zip   cho khách tải (bên trong 1 tệp .exe)
       voice_win.json             phiên bản + SHA-256 (trang quản trị đọc khi bấm Phát hành)
 
-macOS (GitHub Actions tự gọi):
+macOS: KHÔNG cần (phần mềm trên Mac tự cập nhật thẳng từ GitHub Releases). Nếu muốn đặt bộ cài Mac lên trang tải:
     python scripts/make_downloads.py --mac apple=<arm64.dmg> intel=<x86_64.dmg>
   → dist/downloads-voice-mac-upload.zip gồm:
       voice_ai_mrhuynh_mac_apple.dmg / voice_ai_mrhuynh_mac_intel.dmg   (cập nhật: phần mềm mở đúng file theo chip)
