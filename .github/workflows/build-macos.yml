@@ -1,18 +1,23 @@
 name: Build macOS
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
 permissions:
   contents: write
+concurrency:
+  group: build-mac-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   dmg:
     strategy:
       fail-fast: false
       matrix:
         include:
-          - { os: macos-15, label: apple-silicon }
+          - { os: macos-15, label: apple }
           - { os: macos-15-intel, label: intel }
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 60
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v5
@@ -25,16 +30,35 @@ jobs:
         run: |
           chmod +x scripts/build_macos.sh
           ./scripts/build_macos.sh
-      - name: Dua .dmg len Releases (khong tinh vao quota artifact)
+      - name: Phien ban
+        id: ver
+        run: echo "ver=$(sed -n 's/^#define AppVersion *"\(.*\)".*/\1/p' scripts/installer.iss)" >> "$GITHUB_OUTPUT"
+      - name: Dua .dmg len Releases (tag v<phien ban>)
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          TAG="mac-${{ github.run_id }}"
-          gh release view "$TAG" >/dev/null 2>&1 || gh release create "$TAG" --title "Mac build $TAG" --notes "Ban build macOS"
-          gh release upload "$TAG" dist/*.dmg --clobber
-      - uses: actions/upload-artifact@v4
-        continue-on-error: true
-        with:
-          name: voice-ai-macos-${{ matrix.label }}
-          path: dist/*.dmg
-          if-no-files-found: error
+          TAG="v${{ steps.ver.outputs.ver }}"
+          mkdir -p out
+          cp dist/*.dmg "out/Voice-AI-MrHuynh-v${{ steps.ver.outputs.ver }}-mac-${{ matrix.label }}.dmg"
+          gh release view "$TAG" >/dev/null 2>&1 || \
+            gh release create "$TAG" --title "Voice AI - Mr Huynh $TAG (macOS)" \
+              --notes "downloads-voice-mac-upload.zip: goi tai len mrhuynh.net/downloads (Upload > Extract) roi Trang quan tri > Voice AI > Phat hanh > macOS. *-mac-apple.dmg cho chip Apple M, *-mac-intel.dmg cho Mac Intel." \
+              --target "${{ github.sha }}" || sleep 10
+          gh release upload "$TAG" out/* --clobber
+
+  package:
+    needs: dmg
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Tao downloads-voice-mac-upload.zip
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VER=$(sed -n 's/^#define AppVersion *"\(.*\)".*/\1/p' scripts/installer.iss)
+          TAG="v$VER"
+          mkdir -p in
+          gh release download "$TAG" -D in -p "*-mac-apple.dmg" -p "*-mac-intel.dmg" --clobber
+          python3 scripts/make_downloads.py --mac "apple=in/Voice-AI-MrHuynh-v$VER-mac-apple.dmg" "intel=in/Voice-AI-MrHuynh-v$VER-mac-intel.dmg"
+          cat dist/downloads-voice-mac/voice_mac.json
+          gh release upload "$TAG" dist/downloads-voice-mac-upload.zip --clobber

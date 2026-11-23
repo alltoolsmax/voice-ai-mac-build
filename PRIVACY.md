@@ -23,7 +23,7 @@ trong các trường hợp sau, và chỉ tải xuống, không gửi nội dung
 
 | Trường hợp | Kết nối tới | Mặc định |
 |---|---|---|
-| Kiểm tra bản mới (bắt buộc cập nhật khi có bản mới) | active.mrhuynh.net, lúc mở ứng dụng và mỗi 3 giờ | Luôn bật |
+| Kiểm tra bản mới (bắt buộc cập nhật khi có bản mới; tải bộ cài từ mrhuynh.net) | active.mrhuynh.net, lúc mở ứng dụng và mỗi 3 giờ | Luôn bật |
 | Báo số máy đang dùng: gửi mã máy MH-… (đã băm, không chứa thông tin cá nhân), phiên bản, hệ điều hành, trạng thái bản quyền | active.mrhuynh.net, lúc mở ứng dụng và mỗi 30 phút | Luôn bật |
 | Bạn bấm Tải về một mô hình không kèm sẵn | Hugging Face | Chỉ khi bạn bấm |
 | Bạn bấm Tải về mô hình Kokoro hoặc thêm tiếng Nhật/Trung (cài bộ tách âm) | PyPI, GitHub / releases.astral.sh | Chỉ khi bạn bấm |

@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import json
 import os
+import platform
 import re
 import sys
 import tempfile
@@ -110,9 +111,15 @@ def fetch_latest() -> dict:
     url = str(body.get("url") or "")
     version = str(body.get("version") or "")
     if sys.platform == "darwin":
-        # macOS: bản Windows (.zip/.exe) vô dụng. Dùng link .dmg riêng (url_mac); chưa có thì
-        # coi như chưa có bản mới cho Mac. Mở link để tải thủ công, không tự cài đè.
-        url = str(body.get("url_mac") or "")
+        # macOS: bản Windows (.zip/.exe) vô dụng. Bản Mac phát hành riêng (trang quản trị › Voice AI ›
+        # Phát hành › macOS): version_mac + link .dmg đúng chip (url_mac_apple / url_mac_intel).
+        # Máy chủ cũ chỉ có url_mac (+ version chung). Mở link để tải thủ công, không tự cài đè.
+        chip = "apple" if platform.machine().lower() in ("arm64", "aarch64") else "intel"
+        if body.get("version_mac"):
+            version = str(body.get("version_mac") or "")
+            url = str(body.get(f"url_mac_{chip}") or body.get("url_mac") or "")
+        else:
+            url = str(body.get("url_mac") or "")
         if not url.startswith("https://"):
             version = ""
     # Chỉ mở liên kết https; link lạ thì dùng trang liên hệ mặc định.

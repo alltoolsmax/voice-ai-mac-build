@@ -223,7 +223,36 @@ def test_mac_without_dmg_link_reports_no_update(monkeypatch):
 
 def test_windows_ignores_url_mac(monkeypatch):
     body = {"version": "9.0.0", "url": "https://x.test/a.zip", "url_mac": "https://x.test/a.dmg"}
-    monkeypatch.setattr(au.sys, "platform", "win32")
+    monkeypatch.setattr(au.sys, "platform", "linux")
     monkeypatch.setattr(au, "UPDATE_URL", "http://x.test/v")
     monkeypatch.setattr(au.urllib.request, "urlopen", _fake_urlopen(body))
     assert au.fetch_latest()["url"] == "https://x.test/a.zip"
+
+
+def test_mac_uses_own_version_and_chip_link(monkeypatch):
+    """Bản Mac phát hành riêng: version_mac + link .dmg đúng chip; máy chủ cũ (chỉ url_mac) vẫn chạy."""
+    import json as _json
+
+    class R:
+        def __init__(self, d): self.d = d
+        def read(self): return _json.dumps(self.d).encode()
+        def __enter__(self): return self
+        def __exit__(self, *a): return False
+    body = {"version": "1.7.0", "url": "https://mrhuynh.net/downloads/voice_ai_mrhuynh_win.exe?v=1.7.0",
+            "version_mac": "1.6.9", "url_mac": "https://mrhuynh.net/downloads/voice_ai_mrhuynh_mac.zip",
+            "url_mac_apple": "https://mrhuynh.net/downloads/voice_ai_mrhuynh_mac_apple.dmg?v=1.6.9",
+            "url_mac_intel": "https://mrhuynh.net/downloads/voice_ai_mrhuynh_mac_intel.dmg?v=1.6.9"}
+    monkeypatch.setattr(au.urllib.request, "urlopen", lambda *a, **k: R(body))
+    monkeypatch.setattr(au.sys, "platform", "darwin")
+    monkeypatch.setattr(au.platform, "machine", lambda: "arm64")
+    r = au.fetch_latest()
+    assert r["version"] == "1.6.9" and r["url"].endswith("mac_apple.dmg?v=1.6.9")
+    monkeypatch.setattr(au.platform, "machine", lambda: "x86_64")
+    assert au.fetch_latest()["url"].endswith("mac_intel.dmg?v=1.6.9")
+    old = {"version": "1.6.1", "url": "https://x/a.exe", "url_mac": "https://mrhuynh.net/downloads/Voice-AI-MacOS.zip"}
+    monkeypatch.setattr(au.urllib.request, "urlopen", lambda *a, **k: R(old))
+    r = au.fetch_latest()
+    assert r["version"] == "1.6.1" and r["url"].endswith("Voice-AI-MacOS.zip")
+    monkeypatch.setattr(au.sys, "platform", "linux")
+    monkeypatch.setattr(au.urllib.request, "urlopen", lambda *a, **k: R(body))
+    assert au.fetch_latest()["version"] == "1.7.0"
