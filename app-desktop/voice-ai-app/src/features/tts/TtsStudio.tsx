@@ -780,14 +780,35 @@ export const TtsStudio: React.FC = () => {
     checkAppUpdate(settings.apiUrl, false, controller.signal)
       .then((info) => {
         setAppUpdate(info);
-        // Tự kiểm tra lúc mở app: chỉ bật hộp thoại một lần cho mỗi bản.
-        if (info.newer && !info.skipped) {
+        // Bắt buộc cập nhật: có bản mới là bật hộp thoại (không bỏ qua được).
+        if (info.newer) {
           setUpdateDialogOpen(true);
         }
       })
       .catch(() => undefined); // mat mang / backend cu: im lang
     return () => controller.abort();
   }, [connectionStatus, settings.apiUrl, appUpdate]);
+
+  // Để app mở lâu: kiểm tra lại mỗi 3 giờ (giống Video AI).
+  useEffect(() => {
+    if (connectionStatus !== "connected") {
+      return;
+    }
+    const t = setInterval(
+      () => {
+        checkAppUpdate(settings.apiUrl, false)
+          .then((info) => {
+            setAppUpdate(info);
+            if (info.newer) {
+              setUpdateDialogOpen(true);
+            }
+          })
+          .catch(() => undefined);
+      },
+      3 * 3600 * 1000
+    );
+    return () => clearInterval(t);
+  }, [connectionStatus, settings.apiUrl]);
 
   const selectedVoiceName =
     (allVoices?.voices ?? voices).find((v) => v.id === selectedVoiceId)?.name ||

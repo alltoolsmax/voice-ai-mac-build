@@ -7,8 +7,9 @@
 - Lúc mở app, giao diện gọi GET /api/app/update. Server hỏi máy chủ phát hành tối đa một lần
   mỗi 5 phút (kết quả lưu ở %LOCALAPPDATA%\\VoiceAIMrHuynh\\update-check.json), chờ tối
   đa 5 giây; mất mạng thì trả `error`, giao diện im lặng.
-- MẶC ĐỊNH BẬT (để người dùng biết có bản mới và biểu phí mới). Tắt được bằng
-  PUT /api/app/update-check; khi tắt, chỉ nút kiểm tra tay (force=1) mới hỏi máy chủ.
+- LUÔN BẬT, không tắt được (bắt buộc cập nhật giống Video AI): có bản mới là giao diện bật
+  hộp thoại cập nhật không bỏ qua được. PUT /api/app/update-check giữ lại cho giao diện cũ
+  nhưng không còn tác dụng.
 - Chỉ gửi một GET tới máy chủ phát hành, không kèm văn bản, audio hay thông tin máy.
 """
 from __future__ import annotations
@@ -77,7 +78,8 @@ def _write(state: dict) -> None:
 
 
 def is_enabled() -> bool:
-    return _read().get("enabled") is not False
+    """Luôn kiểm tra bản mới (không còn công tắc tắt)."""
+    return True
 
 
 def highlights(body: str) -> list[str]:
@@ -138,7 +140,7 @@ def _result(latest: dict | None, *, checked_at: float | None, error: str | None 
         "highlights": [str(n) for n in notes][:MAX_HIGHLIGHTS] if isinstance(notes, list) else [],
         # Người dùng bấm "Để sau" ở hộp thoại của đúng bản này: không bật hộp thoại
         # nữa (thanh báo nhỏ vẫn hiện) cho tới khi có bản mới hơn.
-        "skipped": bool(version) and _read().get("skipped") == version,
+        "skipped": False,          # bắt buộc cập nhật: không còn "Để sau" cho từng bản
         # Cập nhật tự động chỉ khi version.json có đủ sha256 + chữ ký + link .exe và đang chạy bản đã cài.
         "auto_install": bool(
             latest and latest.get("sha256") and latest.get("signature")
@@ -154,8 +156,6 @@ def check(force: bool = False) -> dict:
         cached = state.get("latest") if isinstance(state.get("latest"), dict) else None
         checked_at = state.get("checked_at") if isinstance(state.get("checked_at"), (int, float)) else None
         if not force:
-            if state.get("enabled") is False:
-                return _result(None, checked_at=None)
             if cached and checked_at and time.time() - checked_at < CHECK_INTERVAL_SECONDS:
                 return _result(cached, checked_at=checked_at)
         try:
@@ -182,8 +182,7 @@ class UpdateCheckSettings(BaseModel):
 
 @router.put("/api/app/update-check")
 def set_update_check(settings: UpdateCheckSettings):
-    with _lock:
-        _write({**_read(), "enabled": settings.enabled})
+    """Không còn tắt được: luôn trả enabled=true."""
     return {"enabled": is_enabled()}
 
 

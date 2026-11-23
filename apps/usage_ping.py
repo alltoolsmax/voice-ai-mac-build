@@ -4,7 +4,7 @@
   thông tin cá nhân), phiên bản, hệ điều hành, trạng thái bản quyền (licensed / trial / expired).
 - Lúc mở ứng dụng (sau 20 giây) và mỗi 30 phút khi ứng dụng còn mở.
 - Không gửi văn bản, audio hay thông tin cá nhân. Lỗi mạng: bỏ qua, không thử lại dồn dập.
-- Đi cùng công tắc "Kiểm tra bản mới" trong Cài đặt: tắt công tắc đó thì không báo.
+- Luôn bật (giống Video AI).
 """
 from __future__ import annotations
 
@@ -47,9 +47,6 @@ def build_url(kind: str = "") -> str:
 def ping(kind: str = "") -> bool:
     """Gửi 1 lần. Trả True nếu máy chủ nhận."""
     if not USAGE_URL.startswith(("https://", "http://127.0.0.1", "http://localhost")):
-        return False
-    from apps import app_update
-    if not app_update.is_enabled():
         return False
     try:
         from apps.runtime_paths import https_context

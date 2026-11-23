@@ -46,14 +46,14 @@ def test_parse_and_compare_versions():
     assert not au.is_newer("", "1.0.1")
 
 
-def test_on_by_default_and_can_be_turned_off(client):
+def test_always_on_cannot_be_turned_off(client):
+    """Bắt buộc cập nhật (giống Video AI): không còn công tắc tắt kiểm tra bản mới."""
     body = client.get("/api/app/update").json()
     assert body["enabled"] is True and body["latest"] == "9.0.0"
-    client.calls.clear()
-    client.put("/api/app/update-check", json={"enabled": False})
+    assert client.put("/api/app/update-check", json={"enabled": False}).json() == {"enabled": True}
+    au._write({**au._read(), "enabled": False, "checked_at": 0})      # cấu hình cũ đã tắt
     body = client.get("/api/app/update").json()
-    assert body["enabled"] is False and body["newer"] is False
-    assert client.calls == []  # tắt rồi thì không tự kết nối mạng
+    assert body["enabled"] is True and body["newer"] is True
 
 
 def test_reports_newer_release(client):
@@ -73,15 +73,6 @@ def test_checks_github_at_most_once_a_day(client):
     assert len(client.calls) == 1
     client.get("/api/app/update?force=true")
     assert len(client.calls) == 2
-
-
-def test_disabled_skips_automatic_check_but_manual_still_works(client):
-    assert client.put("/api/app/update-check", json={"enabled": False}).json() == {"enabled": False}
-    body = client.get("/api/app/update").json()
-    assert body["enabled"] is False and body["latest"] is None and body["newer"] is False
-    assert client.calls == []
-    assert client.get("/api/app/update?force=true").json()["newer"] is True
-    assert client.put("/api/app/update-check", json={"enabled": True}).json() == {"enabled": True}
 
 
 def test_offline_returns_error_not_500(client, monkeypatch):
@@ -176,17 +167,12 @@ def test_highlights_lay_tieu_de_nhom_thay_doi():
     assert au.highlights("") == []
 
 
-def test_de_sau_khong_bat_hop_thoai_lai_cho_toi_ban_ke_tiep(client):
-    client.put("/api/app/update-check", json={"enabled": True})
-    assert client.get("/api/app/update").json()["skipped"] is False
+def test_de_sau_khong_con_bo_qua_duoc_ban_moi(client):
+    """Bắt buộc cập nhật: dù gọi update-skip (giao diện cũ), bản mới vẫn bắt cập nhật."""
     local = TestClient(client.app, base_url="http://127.0.0.1:8001")
     assert local.put("/api/app/update-skip", json={"version": "9.0.0"}).status_code == 200
-    assert client.get("/api/app/update").json()["skipped"] is True
-    # Bản mới hơn bản đã bỏ qua: hộp thoại lại hiện.
-    au._write({**au._read(), "latest": {"version": "9.1.0", "url": au.RELEASES_PAGE}})
     body = client.get("/api/app/update").json()
-    assert body["latest"] == "9.1.0" and body["skipped"] is False
-    assert body["highlights"] == []          # bản lưu từ phiên bản app cũ: không có
+    assert body["newer"] is True and body["skipped"] is False
 
 
 def test_trang_web_la_khong_bo_qua_duoc_cap_nhat(client):

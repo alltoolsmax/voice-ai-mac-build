@@ -25,11 +25,9 @@ def test_ping_sends_only_hashed_machine_version_os_state(monkeypatch, tmp_path):
     assert set(q) == {"p", "m", "v", "os", "tier", "k"}
     assert q["p"] == ["voice"] and q["v"] == [APP_VERSION] and q["k"] == ["open"]
     assert q["m"][0].startswith("MH-") and q["tier"][0] in ("licensed", "trial", "expired")
-    # tắt "Kiểm tra bản mới" trong Cài đặt → không báo gì
+    # không còn công tắc: đặt enabled=false kiểu cũ vẫn báo
     app_update._write({"enabled": False})
-    n = len(seen)
-    assert not usage_ping.ping()
-    assert len(seen) == n
+    assert usage_ping.ping()
 
 
 def test_ping_network_error_is_silent(monkeypatch, tmp_path):

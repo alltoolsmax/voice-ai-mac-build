@@ -6,7 +6,6 @@ import {
   type AppUpdateInfo,
   fetchUpdateInstall,
   launchUpdate,
-  skipAppUpdate,
   startUpdateInstall,
   type UpdateInstallState,
 } from "../api";
@@ -50,14 +49,14 @@ export const UpdateBanner: React.FC<{
   );
 };
 
-/** Hộp thoại "Có bản mới" giữa màn hình, hiện một lần cho mỗi bản. "Để sau" ghi
- *  nhớ bản đó ở máy chủ nên lần mở sau không bật lại (thanh báo nhỏ vẫn còn);
- *  nút X chỉ đóng trong phiên này. Chỉ mở trang tải, không tự tải/tự cài. */
+/** Hộp thoại "Có bản mới" giữa màn hình. BẮT BUỘC cập nhật (giống Video AI): không có
+ *  "Để sau", không đóng được bằng X / Esc; hiện lại mỗi lần mở app cho tới khi lên bản mới.
+ *  Bản cài trên Windows (version.json có chữ ký): tải + cài tự động; còn lại mở trang tải. */
 export const UpdateDialog: React.FC<{
   apiUrl: string;
   info: AppUpdateInfo;
-  onClose: () => void;
-}> = ({ apiUrl, info, onClose }) => {
+  onClose?: () => void;
+}> = ({ apiUrl, info }) => {
   const titleId = useId();
   const primaryRef = useRef<HTMLAnchorElement>(null);
   const [install, setInstall] = useState<UpdateInstallState | null>(null);
@@ -104,21 +103,7 @@ export const UpdateDialog: React.FC<{
 
   useEffect(() => {
     primaryRef.current?.focus();
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && !busy) {
-        onClose();
-      }
-    };
-    document.addEventListener("keydown", onKeyDown);
-    return () => document.removeEventListener("keydown", onKeyDown);
-  }, [onClose, busy]);
-
-  const handleLater = () => {
-    if (info.latest) {
-      skipAppUpdate(apiUrl, info.latest).catch(() => undefined);
-    }
-    onClose();
-  };
+  }, []);
 
   return (
     <div
@@ -147,20 +132,12 @@ export const UpdateDialog: React.FC<{
               {info.current} → {info.latest}
             </p>
           </div>
-          <button
-            aria-label="Đóng"
-            className="rounded-lg p-1 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
-            onClick={onClose}
-            type="button"
-          >
-            <X className="h-4 w-4" />
-          </button>
         </div>
 
         <p className="mt-4 text-foreground/80 text-sm">
           Đã có bản <strong>{info.latest}</strong> với tính năng mới và sửa lỗi.
-          Cài đè lên bản cũ, giọng đã nhân bản, các bản đã tạo và cài đặt được
-          giữ nguyên.
+          Cần cập nhật để tiếp tục sử dụng. Cài đè lên bản cũ, giọng đã nhân
+          bản, các bản đã tạo và cài đặt được giữ nguyên.
         </p>
         {info.highlights && info.highlights.length > 0 && (
           <ul className="update-dialog-list">
@@ -213,14 +190,6 @@ export const UpdateDialog: React.FC<{
             {info.auto_install ? "Tải thủ công" : "Có gì mới"}
           </a>
           <div className="flex gap-2">
-            <button
-              className="rounded-lg border border-border px-4 py-2 font-semibold text-foreground text-xs transition-colors hover:bg-secondary disabled:opacity-50"
-              disabled={busy}
-              onClick={handleLater}
-              type="button"
-            >
-              Để sau
-            </button>
             {info.auto_install ? (
               <button
                 className="studio-primary inline-flex items-center gap-1.5 rounded-lg px-4 py-2 font-semibold text-xs"
@@ -239,7 +208,6 @@ export const UpdateDialog: React.FC<{
               <a
                 className="studio-primary inline-flex items-center gap-1.5 rounded-lg px-4 py-2 font-semibold text-xs"
                 href={info.url}
-                onClick={onClose}
                 ref={primaryRef}
                 rel="noreferrer"
                 target="_blank"
